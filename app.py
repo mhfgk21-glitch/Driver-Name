@@ -867,7 +867,7 @@ with st.container():
         st.markdown("<div class='app-topbar topbar-logo'>DN</div>", unsafe_allow_html=True)
 
     with topbar_cols[1]:
-        search_query = st.text_input("بحث", placeholder="رقم وصل أو هاتف", label_visibility="collapsed", key="topbar_search")
+        search_query = st.text_input("بحث", placeholder="اسم المندوب", label_visibility="collapsed", key="topbar_search")
 
     with topbar_cols[2]:
         with st.popover("متوسطة (548 ms)", icon=":material/wifi:", use_container_width=True):
