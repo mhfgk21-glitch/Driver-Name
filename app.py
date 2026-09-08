@@ -1,5 +1,6 @@
 # pyrefly: ignore [missing-import]
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -270,6 +271,38 @@ def build_text_output(drivers_data: dict, title: str) -> str:
     return "\n".join(lines)
 
 
+def render_copy_button(text: str, key: str) -> None:
+    """عرض زر ينسخ النص إلى حافظة المستخدم."""
+    import json
+
+    text_json = json.dumps(text, ensure_ascii=False)
+    components.html(f"""
+    <button id="copy-{key}" style="
+        width: 100%; padding: 10px 12px; border: 0; border-radius: 10px;
+        background: #6366f1; color: white; font-family: Cairo, sans-serif;
+        font-size: 14px; font-weight: 700; cursor: pointer;
+    ">📋 نسخ</button>
+    <script>
+        const button = document.getElementById("copy-{key}");
+        const text = {text_json};
+        button.addEventListener("click", async () => {{
+            try {{
+                await navigator.clipboard.writeText(text);
+            }} catch (error) {{
+                const area = document.createElement("textarea");
+                area.value = text;
+                document.body.appendChild(area);
+                area.select();
+                document.execCommand("copy");
+                area.remove();
+            }}
+            button.textContent = "✅ تم النسخ";
+            setTimeout(() => button.textContent = "📋 نسخ", 1800);
+        }});
+    </script>
+    """, height=48)
+
+
 def to_excel_bytes(dataframes: dict) -> bytes:
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
@@ -455,9 +488,7 @@ if has_data:
             col_txt, col_btn = st.columns([5, 1])
             with col_btn:
                 st.download_button("📥 تنزيل", text_output, "results.txt", "text/plain", use_container_width=True)
-                if st.button("📋 نسخ", use_container_width=True):
-                    st.code(text_output, language=None)
-                    st.info("انسخ النص من المربع أعلاه")
+                render_copy_button(text_output, "combined")
             with col_txt:
                 st.markdown(f'<div class="result-box">{text_output.replace(chr(10), "<br>")}</div>', unsafe_allow_html=True)
 
@@ -480,6 +511,7 @@ if has_data:
                     with col_btn:
                         st.download_button(f"📥 تنزيل", text_output, f"{status}.txt", "text/plain",
                                            key=f"dl_{status}", use_container_width=True)
+                        render_copy_button(text_output, f"status-{status}")
                     with col_txt:
                         st.markdown(f'<div class="result-box" style="border-color:{cfg["color"]}55">{text_output.replace(chr(10), "<br>")}</div>',
                                     unsafe_allow_html=True)
