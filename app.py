@@ -657,10 +657,11 @@ with st.container():
         <div>
             <strong>لوحة التحكم</strong>
             <small>إدارة ملفات المندوبين</small>
-            <div class="brand-section"><i class="pi pi-sliders-h"></i><span>إعدادات المعالجة</span></div>
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
 
     with st.container(border=True):
         control_cols = st.columns([1.35, 1.25, 2.4, 1.15])
