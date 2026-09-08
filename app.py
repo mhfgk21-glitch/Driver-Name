@@ -875,7 +875,7 @@ if not st.session_state.authenticated:
         login_cols = st.columns([1, 1.45])
         with login_cols[0]:
             st.markdown("<div class='login-panel'>", unsafe_allow_html=True)
-            st.markdown("<div class='login-logo'>DN</div><h1 class='login-title'>مرحبًا بك</h1><p class='login-subtitle'>سجّل الدخول إلى لوحة بيانات المندوبين</p>", unsafe_allow_html=True)
+            st.markdown("<div class='login-logo'>م</div><h1 class='login-title'>مرحبًا بك</h1><p class='login-subtitle'>سجّل الدخول إلى لوحة بيانات المندوبين</p>", unsafe_allow_html=True)
             with st.form("login_form"):
                 username = st.text_input("اسم المستخدم", placeholder="أدخل اسم المستخدم")
                 password = st.text_input("كلمة المرور", type="password", placeholder="أدخل كلمة المرور")
@@ -1084,7 +1084,7 @@ for key in STATUS_CONFIG:
 with st.container():
     topbar_cols = st.columns([0.8, 2.8, 1.2, 0.75, 0.55, 1.3, 0.55, 0.8])
     with topbar_cols[0]:
-        st.markdown("<div class='app-topbar topbar-logo'>DN</div>", unsafe_allow_html=True)
+        st.markdown("<div class='app-topbar topbar-logo'>م</div>", unsafe_allow_html=True)
 
     with topbar_cols[1]:
         search_query = st.text_input("بحث", placeholder="اسم المندوب", label_visibility="collapsed", key="topbar_search")
@@ -1219,7 +1219,7 @@ for i, status in enumerate(status_labels):
     cfg = STATUS_CONFIG[status]
     with upload_cols[i]:
         st.markdown(f"<div class='upload-label' style='color:{cfg['color']};--status-soft:{cfg['soft_color']}'><i class='pi {cfg['prime_icon']}'></i><span>{status}</span></div>", unsafe_allow_html=True)
-        uploaded = st.file_uploader(f"upload_{status}", type=["xlsx", "xls"], key=f"up_{status}", label_visibility="collapsed")
+        uploaded = st.file_uploader("اختر ملفًا بصيغة إكسل", type=["xlsx", "xls"], key=f"up_{status}", label_visibility="collapsed")
 
         if uploaded:
             try:
