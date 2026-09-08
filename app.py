@@ -21,6 +21,8 @@ st.markdown("""
 @import url('https://unpkg.com/primeicons@7.0.0/primeicons.css');
 
 :root {
+    --font-sans: 'Cairo', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --ink: #172033;
     --muted: #667085;
     --line: #e4e8ef;
@@ -29,11 +31,18 @@ st.markdown("""
     --brand: #0f766e;
     --brand-dark: #115e59;
     --brand-soft: #ccfbf1;
+    --p-primary-color: #0f766e;
+    --p-primary-hover-color: #115e59;
+    --p-primary-contrast-color: #ffffff;
+    --p-border-radius-md: 6px;
+    --p-border-radius-lg: 8px;
+    --p-button-icon-only-width: 2.5rem;
+    --p-transition-duration: 0.2s;
     --shadow: 0 12px 30px rgba(23, 32, 51, 0.08);
 }
 
 *, body, .stApp {
-    font-family: 'Cairo', sans-serif !important;
+    font-family: var(--font-sans) !important;
     direction: rtl;
     color: var(--ink);
 }
@@ -319,6 +328,16 @@ hr { border-color: var(--line) !important; }
     vertical-align: -1px;
 }
 
+.pi-action {
+    display: inline-grid;
+    place-items: center;
+    width: var(--p-button-icon-only-width);
+    height: var(--p-button-icon-only-width);
+    border-radius: var(--p-border-radius-lg);
+    background: var(--brand-soft);
+    color: var(--p-primary-color);
+}
+
 .section-title {
     display: flex;
     align-items: center;
@@ -419,10 +438,10 @@ def render_copy_button(text: str, key: str) -> None:
     text_json = json.dumps(text, ensure_ascii=False)
     components.html(f"""
     <button id="copy-{key}" style="
-        width: 100%; padding: 10px 12px; border: 0; border-radius: 10px;
-        background: #0f766e; color: white; font-family: Cairo, sans-serif;
+        width: 100%; padding: 10px 12px; border: 0; border-radius: 8px;
+        background: var(--p-primary-color); color: var(--p-primary-contrast-color); font-family: var(--font-sans);
         font-size: 14px; font-weight: 700; cursor: pointer;
-    ">📋 نسخ</button>
+    "><i class="pi pi-copy" style="margin-left:7px"></i>نسخ</button>
     <script>
         const button = document.getElementById("copy-{key}");
         const text = {text_json};
@@ -437,8 +456,8 @@ def render_copy_button(text: str, key: str) -> None:
                 document.execCommand("copy");
                 area.remove();
             }}
-            button.textContent = "✅ تم النسخ";
-            setTimeout(() => button.textContent = "📋 نسخ", 1800);
+            button.innerHTML = '<i class="pi pi-check" style="margin-left:7px"></i>تم النسخ';
+            setTimeout(() => button.innerHTML = '<i class="pi pi-copy" style="margin-left:7px"></i>نسخ', 1800);
         }});
     </script>
     """, height=48)
@@ -484,7 +503,7 @@ with st.sidebar:
 
     st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
 
-    use_date_filter = st.toggle("🗓️ تفعيل فلترة التاريخ", value=False)
+    use_date_filter = st.toggle("تفعيل فلترة التاريخ", value=False)
     if use_date_filter:
         col_s, col_e = st.columns(2)
         with col_s:
@@ -495,13 +514,13 @@ with st.sidebar:
         start_date = end_date = None
 
     st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
-    merge_mode = st.toggle("🔗 دمج كل الحالات معاً", value=False)
+    merge_mode = st.toggle("دمج كل الحالات معاً", value=False)
 
     st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
     st.markdown("<div class='section-title'><i class='pi pi-search'></i><span>بحث في النتائج</span></div>", unsafe_allow_html=True)
     search_query = st.text_input("ابحث عن مندوب...", placeholder="اكتب اسم المندوب", label_visibility="collapsed")
 
-    if st.button("🧹 مسح كل البيانات", use_container_width=True, type="secondary"):
+    if st.button("مسح كل البيانات", use_container_width=True, type="secondary"):
         for key in STATUS_CONFIG:
             st.session_state[f"data_{key}"] = None
             st.session_state[f"raw_{key}"]  = None
@@ -538,7 +557,7 @@ for i, status in enumerate(status_labels):
                         else:
                             st.session_state[f"raw_{status}"]  = df
                             st.session_state[f"data_{status}"] = process_df(df, col_driver, col_code)
-                            st.success(f"✅ {len(df)} سطر")
+                            st.success(f"تم تحميل {len(df)} سطر")
             except Exception as e:
                 st.error(f"خطأ: {e}")
 
@@ -598,10 +617,10 @@ st.divider()
 # ─── النتائج والتحليلات ────────────────────────────────────────────────────────
 if has_data:
     tab_results, tab_chart, tab_table, tab_export = st.tabs([
-        "📋 النتائج النصية",
-        "📊 الرسم البياني",
-        "🗂️ جدول المندوبين",
-        "💾 تصدير البيانات",
+        "النتائج النصية",
+        "الرسم البياني",
+        "جدول المندوبين",
+        "تصدير البيانات",
     ])
 
     # ── Tab 1: النتائج النصية ────────────────────────────────────────────────
@@ -625,7 +644,7 @@ if has_data:
 
             col_txt, col_btn = st.columns([5, 1])
             with col_btn:
-                st.download_button("📥 تنزيل", text_output, "results.txt", "text/plain", use_container_width=True)
+                st.download_button("تنزيل", text_output, "results.txt", "text/plain", use_container_width=True)
                 render_copy_button(text_output, "combined")
             with col_txt:
                 st.markdown(f'<div class="result-box">{text_output.replace(chr(10), "<br>")}</div>', unsafe_allow_html=True)
@@ -643,11 +662,11 @@ if has_data:
                 if search_query:
                     filtered = {k: v for k, v in data.items() if search_query.lower() in k.lower()}
 
-                with st.expander(f"{cfg['icon']} {status} — {sum(d['count'] for d in filtered.values())} طلب | {len(filtered)} مندوب", expanded=True):
+                with st.expander(f"{status} — {sum(d['count'] for d in filtered.values())} طلب | {len(filtered)} مندوب", expanded=True):
                     text_output = build_text_output(filtered, status)
                     col_txt, col_btn = st.columns([5, 1])
                     with col_btn:
-                        st.download_button(f"📥 تنزيل", text_output, f"{status}.txt", "text/plain",
+                        st.download_button("تنزيل", text_output, f"{status}.txt", "text/plain",
                                            key=f"dl_{status}", use_container_width=True)
                         render_copy_button(text_output, f"status-{status}")
                     with col_txt:
@@ -656,9 +675,9 @@ if has_data:
 
     # ── Tab 2: الرسم البياني ─────────────────────────────────────────────────
     with tab_chart:
-        chart_type = st.radio("نوع الرسم", ["📊 أعمدة", "🥧 دائري", "📈 مقارنة الحالات"], horizontal=True)
+        chart_type = st.radio("نوع الرسم", ["أعمدة", "دائري", "مقارنة الحالات"], horizontal=True)
 
-        if chart_type == "📊 أعمدة":
+        if chart_type == "أعمدة":
             # أعلى 15 مندوب
             combined_counts: dict = {}
             for data in all_processed.values():
@@ -689,7 +708,7 @@ if has_data:
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
-        elif chart_type == "🥧 دائري":
+        elif chart_type == "دائري":
             labels = [s for s, v in status_counts.items() if v > 0]
             values = [status_counts[s] for s in labels]
             colors = [STATUS_CONFIG[s]["color"] for s in labels]
@@ -746,7 +765,7 @@ if has_data:
                 for name, info in data.items():
                     rows.append({
                         "المندوب":  name,
-                        "الحالة":   f"{cfg['icon']} {status}",
+                        "الحالة":   status,
                         "عدد الطلبات": info["count"],
                         "الأكواد":  ", ".join(info["codes"][:5]) + ("..." if len(info["codes"]) > 5 else ""),
                     })
@@ -787,7 +806,7 @@ if has_data:
                         full_text += build_text_output(data, status) + "\n\n"
 
             st.download_button(
-                "📥 تنزيل TXT",
+                "تنزيل TXT",
                 full_text,
                 "drivers_results.txt",
                 "text/plain",
@@ -800,7 +819,7 @@ if has_data:
             raw_frames = {s: st.session_state[f"raw_{s}"] for s in STATUS_CONFIG}
             excel_bytes = to_excel_bytes(raw_frames)
             st.download_button(
-                "📥 تنزيل Excel",
+                "تنزيل Excel",
                 excel_bytes,
                 "drivers_data.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -819,7 +838,7 @@ if has_data:
                 df_exp = pd.DataFrame(rows_exp)
                 csv_bytes = df_exp.to_csv(index=False).encode("utf-8-sig")
                 st.download_button(
-                    "📥 تنزيل CSV",
+                    "تنزيل CSV",
                     csv_bytes,
                     "drivers_summary.csv",
                     "text/csv",
