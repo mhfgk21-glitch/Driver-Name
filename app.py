@@ -736,15 +736,6 @@ for key in STATUS_CONFIG:
 
 # ─── الشريط الجانبي ────────────────────────────────────────────────────────────
 with st.container():
-    theme_cols = st.columns([8, 1])
-    with theme_cols[1]:
-        theme_icon = "pi-sun" if st.session_state.dark_mode else "pi-moon"
-        theme_label = "نهاري" if st.session_state.dark_mode else "ليلي"
-        st.markdown(f"<div class='theme-toolbar'><i class='pi {theme_icon}'></i><span>المظهر</span></div>", unsafe_allow_html=True)
-        if st.button(theme_label, use_container_width=True, type="secondary"):
-            st.session_state.dark_mode = not st.session_state.dark_mode
-            st.rerun()
-
     st.markdown("""
     <div class="sidebar-brand">
         <div class="brand-icon"><i class="pi pi-chart-bar"></i></div>
@@ -754,6 +745,15 @@ with st.container():
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    theme_cols = st.columns([8, 1])
+    with theme_cols[1]:
+        theme_icon = "pi-sun" if st.session_state.dark_mode else "pi-moon"
+        theme_label = "نهاري" if st.session_state.dark_mode else "ليلي"
+        st.markdown(f"<div class='theme-toolbar'><i class='pi {theme_icon}'></i><span>المظهر</span></div>", unsafe_allow_html=True)
+        if st.button(theme_label, use_container_width=True, type="secondary"):
+            st.session_state.dark_mode = not st.session_state.dark_mode
+            st.rerun()
 
     st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
 
