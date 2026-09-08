@@ -596,13 +596,25 @@ def render_copy_button(text: str, key: str) -> None:
         .pi-check::before {{ content: "✓"; }}
     </style>
     <button id="copy-{key}" style="
-        width: 100%; padding: 10px 12px; border: 0; border-radius: 8px;
-        background: var(--p-primary-color); color: var(--p-primary-contrast-color); font-family: var(--font-sans);
+        width: 100%; min-height: 42px; padding: 9px 18px;
+        border: 1px solid #e4e8ef; border-radius: 8px;
+        background: #ffffff; color: #172033; font-family: var(--font-sans);
         font-size: 14px; font-weight: 700; cursor: pointer;
+        transition: all 0.2s ease;
     "><i class="pi pi-copy" style="margin-left:7px"></i>نسخ</button>
     <script>
         const button = document.getElementById("copy-{key}");
         const text = {text_json};
+        button.addEventListener("mouseenter", () => {{
+            button.style.borderColor = "#8dc5bf";
+            button.style.color = "#115e59";
+            button.style.boxShadow = "0 6px 18px rgba(15, 118, 110, 0.14)";
+        }});
+        button.addEventListener("mouseleave", () => {{
+            button.style.borderColor = "#e4e8ef";
+            button.style.color = "#172033";
+            button.style.boxShadow = "none";
+        }});
         button.addEventListener("click", async () => {{
             try {{
                 await navigator.clipboard.writeText(text);
