@@ -64,14 +64,36 @@ st.markdown("""
     --brand: #0f766e;
     --brand-dark: #115e59;
     --brand-soft: #ccfbf1;
-    --p-primary-color: #0f766e;
-    --p-primary-hover-color: #115e59;
-    --p-primary-contrast-color: #ffffff;
-    --p-border-radius-md: 6px;
-    --p-border-radius-lg: 8px;
-    --p-button-icon-only-width: 2.5rem;
-    --p-transition-duration: 0.2s;
     --shadow: 0 12px 30px rgba(23, 32, 51, 0.08);
+
+    /* PrimeNG Design Tokens */
+    --surface-a: #ffffff;
+    --surface-b: #f8f9fa;
+    --surface-c: #e9ecef;
+    --surface-d: #dee2e6;
+    --surface-ground: #eff3f8;
+    --surface-section: #ffffff;
+    --surface-card: #ffffff;
+    --surface-overlay: #ffffff;
+    --surface-border: #dfe7ef;
+    --surface-hover: #f6f9fc;
+    --text-color: #495057;
+    --text-color-secondary: #6c757d;
+    --primary-color: #532BFD;
+    --primary-color-text: #ffffff;
+    --primary-50: #f7f7fe;
+    --primary-100: #dadafc;
+    --primary-200: #bcbdf9;
+    --primary-300: #9ea0f6;
+    --primary-400: #8183f4;
+    --primary-500: #532BFD;
+    --primary-600: #5457cd;
+    --primary-700: #4547a9;
+    --primary-800: #363885;
+    --primary-900: #282960;
+    --border-radius: 6px;
+    --focus-ring: 0 0 0 0.2rem #C7D2FE;
+    --maskbg: rgba(0, 0, 0, 0.4);
 }
 
 body, .stApp {
@@ -1236,51 +1258,56 @@ with st.container(key="app_topbar"):
 body { background:transparent; overflow:hidden; }
 
 #pill {
-    display: flex;
+    display: inline-flex;
+    cursor: pointer;
+    user-select: none;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    height: 40px;
-    padding: 6px 12px;
-    border: 1px solid #bfdbfe;
-    border-radius: 10px;
-    background: #eff6ff;
-    color: #1d4ed8;
-    font-size: 0.72rem;
+    vertical-align: bottom;
+    text-align: center;
+    overflow: hidden;
+    position: relative;
+    gap: 7px;
+    height: 38px;
+    padding: 0.55rem 1.1rem;
+    border-radius: 2rem;
+    font-size: 0.8rem;
     font-weight: 700;
     white-space: nowrap;
-    transition: all 0.25s ease;
-    cursor: pointer;
-    box-shadow: 0 1px 4px rgba(37,99,235,0.08);
-    user-select: none;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+    background-color: #f7f7fe;
+    border: 1px solid #dadafc;
+    color: #532BFD;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 #pill:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(37,99,235,0.18);
+    border-color: #532BFD;
+    background-color: #ededfd;
+    box-shadow: 0 0 0 0.18rem rgba(83, 43, 253, 0.16);
 }
 #pill.good {
-    border-color: #a7f3d0; background: #ecfdf5; color: #047857;
-    box-shadow: 0 1px 4px rgba(4,120,87,0.1);
+    border-color: #caf1d8; background-color: #f4fcf7; color: #188a42;
+    box-shadow: 0 1px 3px rgba(24, 138, 66, 0.08);
 }
 #pill.good:hover {
-    border-color: #6ee7b7;
-    box-shadow: 0 4px 12px rgba(4,120,87,0.18);
+    border-color: #22c55e;
+    box-shadow: 0 0 0 0.18rem rgba(34, 197, 94, 0.2);
 }
 #pill.medium {
-    border-color: #fcd34d; background: #fffbeb; color: #b45309;
-    box-shadow: 0 1px 4px rgba(180,83,9,0.1);
+    border-color: #faedc4; background-color: #fefbf3; color: #a47d06;
+    box-shadow: 0 1px 3px rgba(164, 125, 6, 0.08);
 }
 #pill.medium:hover {
-    border-color: #f59e0b;
-    box-shadow: 0 4px 12px rgba(180,83,9,0.18);
+    border-color: #eab308;
+    box-shadow: 0 0 0 0.18rem rgba(234, 179, 8, 0.2);
 }
 #pill.slow {
-    border-color: #fecdd3; background: #fff1f2; color: #be123c;
-    box-shadow: 0 1px 4px rgba(190,18,60,0.1);
+    border-color: #ffd0ce; background-color: #fff5f5; color: #b32b23;
+    box-shadow: 0 1px 3px rgba(179, 43, 35, 0.08);
 }
 #pill.slow:hover {
-    border-color: #fb7185;
-    box-shadow: 0 4px 12px rgba(190,18,60,0.18);
+    border-color: #ff3d32;
+    box-shadow: 0 0 0 0.18rem rgba(255, 61, 50, 0.2);
 }
 
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
@@ -1340,7 +1367,7 @@ body { background:transparent; overflow:hidden; }
     overlay.innerHTML = `
         <div class="p-overlaypanel-content">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid ${isDark ? '#334155' : '#dfe7ef'};">
-                <h6 style="margin:0; color:#0f766e; font-size:0.95rem; font-weight:700; display:flex; align-items:center; gap:6px;">
+                <h6 style="margin:0; color:#532BFD; font-size:0.95rem; font-weight:700; display:flex; align-items:center; gap:6px;">
                     <i class="pi pi-globe"></i> معلومات الشبكة
                 </h6>
                 <span id="pno-badge" style="padding:2px 8px; border-radius:6px; font-size:0.72rem; font-weight:700; background:#fef3c7; color:#b45309;">
@@ -1383,8 +1410,8 @@ body { background:transparent; overflow:hidden; }
                 </div>
             </div>
             <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
-                <button id="pno-refresh-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; padding:4px 14px; border:1px solid #0f766e; background:transparent; color:#0f766e; border-radius:6px; font-size:0.78rem; font-weight:700; cursor:pointer; font-family:Cairo,sans-serif; transition:all 0.2s;">
-                    <span id="pno-refresh-icon" class="pi pi-refresh" style="font-size:0.76rem;"></span>
+                <button id="pno-refresh-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; padding:0.45rem 1.15rem; border:1px solid #532BFD; background:transparent; color:#532BFD; border-radius:2rem; font-size:0.8rem; font-weight:700; cursor:pointer; font-family:Cairo,sans-serif; transition:background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;">
+                    <span id="pno-refresh-icon" class="pi pi-refresh" style="font-size:0.78rem;"></span>
                     <span>تحديث</span>
                 </button>
             </div>
@@ -1507,6 +1534,16 @@ body { background:transparent; overflow:hidden; }
     // زر التحديث في اللوحة
     var refreshBtn = parentDoc.getElementById('pno-refresh-btn');
     if (refreshBtn) {
+        refreshBtn.onmouseenter = function() {
+            this.style.backgroundColor = '#532BFD';
+            this.style.color = '#ffffff';
+            this.style.boxShadow = '0 0 0 0.18rem rgba(83, 43, 253, 0.25)';
+        };
+        refreshBtn.onmouseleave = function() {
+            this.style.backgroundColor = 'transparent';
+            this.style.color = '#532BFD';
+            this.style.boxShadow = 'none';
+        };
         refreshBtn.onclick = function(e) {
             e.stopPropagation();
             checkNetwork();
