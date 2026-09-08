@@ -453,8 +453,23 @@ hr { border-color: var(--line) !important; }
     display: flex;
     align-items: center;
     gap: 7px;
+    padding: 8px 10px;
+    border: 1px solid currentColor;
+    border-radius: var(--p-border-radius-md);
+    background: var(--status-soft, #f8fafc);
     font-weight: 700;
     margin-bottom: 6px;
+}
+
+.upload-label .pi {
+    display: inline-grid;
+    place-items: center;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: currentColor;
+    color: white;
+    font-size: 0.8rem;
 }
 
 @media (max-width: 768px) {
@@ -467,10 +482,10 @@ hr { border-color: var(--line) !important; }
 
 # ─── الثوابت ──────────────────────────────────────────────────────────────────
 STATUS_CONFIG = {
-    "قيد التوصيل": {"icon": "🚚", "prime_icon": "pi-truck", "color": "#2563eb", "badge": "badge-delivery", "emoji_badge": "🔵"},
-    "المؤجل":       {"icon": "⏳", "prime_icon": "pi-clock", "color": "#b45309", "badge": "badge-deferred", "emoji_badge": "🟡"},
-    "الراجع":       {"icon": "↩️", "prime_icon": "pi-replay", "color": "#be123c", "badge": "badge-returned",  "emoji_badge": "🔴"},
-    "تم التسليم":   {"icon": "✅", "prime_icon": "pi-check-circle", "color": "#047857", "badge": "badge-delivered", "emoji_badge": "🟢"},
+    "قيد التوصيل": {"icon": "🚚", "prime_icon": "pi-truck", "color": "#2563eb", "soft_color": "#eff6ff", "badge": "badge-delivery", "emoji_badge": "🔵"},
+    "المؤجل":       {"icon": "⏳", "prime_icon": "pi-clock", "color": "#b45309", "soft_color": "#fffbeb", "badge": "badge-deferred", "emoji_badge": "🟡"},
+    "الراجع":       {"icon": "↩️", "prime_icon": "pi-replay", "color": "#be123c", "soft_color": "#fff1f2", "badge": "badge-returned",  "emoji_badge": "🔴"},
+    "تم التسليم":   {"icon": "✅", "prime_icon": "pi-check-circle", "color": "#047857", "soft_color": "#ecfdf5", "badge": "badge-delivered", "emoji_badge": "🟢"},
 }
 
 POSSIBLE_DRIVER_COLS = ['drivername', 'اسم المندوب', 'المندوب', 'driver', 'الاسم']
@@ -631,7 +646,7 @@ status_labels = list(STATUS_CONFIG.keys())
 for i, status in enumerate(status_labels):
     cfg = STATUS_CONFIG[status]
     with upload_cols[i]:
-        st.markdown(f"<div class='upload-label' style='color:{cfg['color']}'><i class='pi {cfg['prime_icon']}'></i><span>{status}</span></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='upload-label' style='color:{cfg['color']};--status-soft:{cfg['soft_color']}'><i class='pi {cfg['prime_icon']}'></i><span>{status}</span></div>", unsafe_allow_html=True)
         uploaded = st.file_uploader(f"upload_{status}", type=["xlsx", "xls"], key=f"up_{status}", label_visibility="collapsed")
 
         if uploaded:
