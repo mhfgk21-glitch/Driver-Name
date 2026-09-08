@@ -113,6 +113,88 @@ st.markdown("""
     box-shadow: -8px 0 28px rgba(23, 32, 51, 0.04);
 }
 
+[data-testid="stSidebar"] > div:first-child {
+    padding-top: 1rem;
+}
+
+[data-testid="stSidebar"] .block-container {
+    padding: 1.25rem 1.1rem 1.5rem;
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 13px 14px;
+    margin-bottom: 20px;
+    background: #f0fdfa;
+    border: 1px solid #ccfbf1;
+    border-radius: 10px;
+}
+
+.sidebar-brand .brand-icon {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--brand);
+    color: white;
+    font-size: 1.05rem;
+}
+
+.sidebar-brand strong {
+    display: block;
+    color: var(--ink);
+    font-size: 0.94rem;
+    line-height: 1.35;
+}
+
+.sidebar-brand small {
+    display: block;
+    color: var(--muted);
+    font-size: 0.72rem;
+    margin-top: 2px;
+}
+
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 0.84rem;
+}
+
+[data-testid="stSidebar"] .stToggle {
+    padding: 7px 9px;
+    margin: 2px 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+[data-testid="stSidebar"] .stToggle:hover {
+    background: var(--surface-soft);
+    border-color: var(--line);
+}
+
+[data-testid="stSidebar"] .stTextInput {
+    margin-top: 3px;
+}
+
+[data-testid="stSidebar"] .stButton > button {
+    width: 100%;
+    margin-top: 3px;
+    color: #be123c;
+    border-color: #fecdd3;
+    background: #fff1f2;
+}
+
+[data-testid="stSidebar"] .stButton > button:hover {
+    color: #9f1239;
+    border-color: #fda4af;
+    background: #ffe4e6;
+    box-shadow: 0 5px 14px rgba(190, 18, 60, 0.12);
+}
+
 [data-testid="stSidebar"] .stMarkdown h3 {
     color: var(--ink);
     font-size: 1rem;
@@ -229,6 +311,12 @@ hr { border-color: var(--line) !important; }
 .section-title .pi {
     color: var(--brand);
     font-size: 1.05em;
+}
+
+.sidebar-divider {
+    height: 1px;
+    margin: 15px 0;
+    background: var(--line);
 }
 
 .upload-label {
@@ -366,8 +454,14 @@ for key in STATUS_CONFIG:
 
 # ─── الشريط الجانبي ────────────────────────────────────────────────────────────
 with st.sidebar:
+    st.markdown("""
+    <div class="sidebar-brand">
+        <div class="brand-icon"><i class="pi pi-bars"></i></div>
+        <div><strong>لوحة التحكم</strong><small>إدارة ملفات المندوبين</small></div>
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
-    st.divider()
 
     use_date_filter = st.toggle("🗓️ تفعيل فلترة التاريخ", value=False)
     if use_date_filter:
@@ -379,21 +473,20 @@ with st.sidebar:
     else:
         start_date = end_date = None
 
-    st.divider()
+    st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
     merge_mode = st.toggle("🔗 دمج كل الحالات معاً", value=False)
 
-    st.divider()
+    st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
     st.markdown("<div class='section-title'><i class='pi pi-search'></i><span>بحث في النتائج</span></div>", unsafe_allow_html=True)
     search_query = st.text_input("ابحث عن مندوب...", placeholder="اكتب اسم المندوب", label_visibility="collapsed")
 
-    st.divider()
     if st.button("🧹 مسح كل البيانات", use_container_width=True, type="secondary"):
         for key in STATUS_CONFIG:
             st.session_state[f"data_{key}"] = None
             st.session_state[f"raw_{key}"]  = None
         st.rerun()
 
-    st.divider()
+    st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
     st.markdown("<div style='color:#98a2b3;font-size:0.75rem;text-align:center'>نظام بيانات المندوبين Pro v2.0</div>", unsafe_allow_html=True)
 
 # ─── رفع الملفات ──────────────────────────────────────────────────────────────
