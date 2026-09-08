@@ -23,6 +23,8 @@ if "current_user" not in st.session_state:
     st.session_state.current_user = None
 if "current_role" not in st.session_state:
     st.session_state.current_role = None
+if "show_user_management" not in st.session_state:
+    st.session_state.show_user_management = False
 
 AUTH_USERS = {
     os.getenv("APP_ADMIN_USERNAME", "admin"): {
@@ -748,6 +750,15 @@ hr { border-color: var(--line) !important; }
     font-size: 0.78rem;
 }
 
+.st-key-user_management_toggle button {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    color: var(--brand);
+    font-size: 1.1rem;
+}
+
 .st-key-topbar_logout button::before {
     content: "↪";
     margin-left: 6px;
@@ -1017,7 +1028,7 @@ for key in STATUS_CONFIG:
 
 # ─── الشريط الجانبي ────────────────────────────────────────────────────────────
 with st.container():
-    topbar_cols = st.columns([0.8, 2.8, 1.2, 0.75, 0.55, 1.3, 0.8])
+    topbar_cols = st.columns([0.8, 2.8, 1.2, 0.75, 0.55, 1.3, 0.55, 0.8])
     with topbar_cols[0]:
         st.markdown("<div class='app-topbar topbar-logo'>DN</div>", unsafe_allow_html=True)
 
@@ -1058,10 +1069,18 @@ with st.container():
         st.markdown(f"<div class='topbar-account'><span class='topbar-avatar'>{avatar}</span><span>{user_name}<br><small>{role_label}</small></span></div>", unsafe_allow_html=True)
 
     with topbar_cols[6]:
+        if st.session_state.current_role == "admin":
+            management_label = "إخفاء إدارة المستخدمين" if st.session_state.show_user_management else "إدارة المستخدمين"
+            if st.button("", key="user_management_toggle", icon=":material/manage_accounts:", help=management_label, type="secondary", use_container_width=True):
+                st.session_state.show_user_management = not st.session_state.show_user_management
+                st.rerun()
+
+    with topbar_cols[7]:
         if st.button("تسجيل الخروج", key="topbar_logout", help="تسجيل الخروج", type="secondary", use_container_width=True):
             st.session_state.authenticated = False
             st.session_state.current_user = None
             st.session_state.current_role = None
+            st.session_state.show_user_management = False
             st.rerun()
 
     st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
@@ -1091,7 +1110,7 @@ with st.container():
                     st.session_state[f"raw_{key}"]  = None
                 st.rerun()
 
-    if st.session_state.current_role == "admin":
+    if st.session_state.current_role == "admin" and st.session_state.show_user_management:
         st.markdown("<div class='section-title'><i class='pi pi-users'></i><span>إدارة المستخدمين</span></div>", unsafe_allow_html=True)
         with st.container(border=True):
             user_rows = [
