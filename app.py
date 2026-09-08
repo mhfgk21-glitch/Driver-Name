@@ -601,7 +601,7 @@ def render_copy_button(text: str, key: str) -> None:
         background: #ffffff; color: #172033; font-family: var(--font-sans);
         font-size: 14px; font-weight: 700; cursor: pointer;
         transition: all 0.2s ease;
-    "><i class="pi pi-copy" style="margin-left:7px"></i>نسخ</button>
+    ">نسخ</button>
     <script>
         const button = document.getElementById("copy-{key}");
         const text = {text_json};
@@ -626,8 +626,8 @@ def render_copy_button(text: str, key: str) -> None:
                 document.execCommand("copy");
                 area.remove();
             }}
-            button.innerHTML = '<i class="pi pi-check" style="margin-left:7px"></i>تم النسخ';
-            setTimeout(() => button.innerHTML = '<i class="pi pi-copy" style="margin-left:7px"></i>نسخ', 1800);
+            button.textContent = "تم النسخ";
+            setTimeout(() => button.textContent = "نسخ", 1800);
         }});
     </script>
     """, height=48)
