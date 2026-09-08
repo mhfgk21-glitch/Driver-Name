@@ -328,6 +328,28 @@ hr { border-color: var(--line) !important; }
     vertical-align: -1px;
 }
 
+/* Fallback glyphs keep the icon visible when the external PrimeIcons font is blocked. */
+.pi::before { font-family: var(--font-sans); font-weight: 700; }
+.pi-bars::before { content: "☰"; }
+.pi-sliders-h::before { content: "⚙"; }
+.pi-search::before { content: "⌕"; }
+.pi-upload::before { content: "↑"; }
+.pi-truck::before { content: "▣"; }
+.pi-clock::before { content: "◷"; }
+.pi-replay::before { content: "↶"; }
+.pi-check-circle::before { content: "✓"; }
+.pi-chart-bar::before { content: "▥"; }
+.pi-users::before { content: "♟"; }
+.pi-box::before { content: "□"; }
+.pi-trophy::before { content: "★"; }
+.pi-list::before { content: "☷"; }
+.pi-file-edit::before { content: "✎"; }
+.pi-file-excel::before { content: "▤"; }
+.pi-table::before { content: "▦"; }
+.pi-inbox::before { content: "⌑"; }
+.pi-copy::before { content: "⧉"; }
+.pi-check::before { content: "✓"; }
+
 .pi-action {
     display: inline-grid;
     place-items: center;
@@ -437,6 +459,10 @@ def render_copy_button(text: str, key: str) -> None:
 
     text_json = json.dumps(text, ensure_ascii=False)
     components.html(f"""
+    <style>
+        .pi-copy::before {{ content: "⧉"; }}
+        .pi-check::before {{ content: "✓"; }}
+    </style>
     <button id="copy-{key}" style="
         width: 100%; padding: 10px 12px; border: 0; border-radius: 8px;
         background: var(--p-primary-color); color: var(--p-primary-contrast-color); font-family: var(--font-sans);
