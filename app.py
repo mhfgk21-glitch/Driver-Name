@@ -549,120 +549,123 @@ hr { border-color: var(--line) !important; }
     font-size: 1rem;
 }
 
-.app-topbar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 68px;
-    margin-bottom: 20px;
-    padding: 10px 18px;
+/* ── Topbar container ──────────────────────────────────────────── */
+.st-key-app_topbar [data-testid="stHorizontalBlock"] {
+    align-items: center !important;
+    min-height: 60px;
+    padding: 8px 18px;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(23,32,51,0.07), 0 1px 3px rgba(23,32,51,0.04);
+    margin-bottom: 20px;
+    gap: 6px;
 }
 
+/* Logo */
 .topbar-logo {
     display: grid;
     place-items: center;
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     border-radius: 10px;
-    background: var(--brand);
+    background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
     color: white;
-    font-size: 0.82rem;
+    font-size: 0.88rem;
     font-weight: 900;
     letter-spacing: 0.04em;
+    box-shadow: 0 4px 14px rgba(15,118,110,0.32);
+    margin: auto;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.topbar-logo:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(15,118,110,0.4);
+}
+
+/* Notification bell */
+.topbar-bell {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--surface-soft);
+    border: 1px solid var(--line);
+    font-size: 1rem;
+    cursor: default;
+    transition: all 0.2s ease;
+    margin: auto;
+    user-select: none;
+}
+
+.topbar-bell:hover {
+    background: #fffbeb;
+    border-color: #fcd34d;
+    color: #b45309;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(180,83,9,0.1);
+}
+
+/* User card */
 .topbar-account {
     display: flex;
     align-items: center;
-    gap: 8px;
-    color: var(--ink);
-    font-size: 0.78rem;
-    font-weight: 700;
+    gap: 9px;
+    padding: 5px 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface-soft);
     white-space: nowrap;
+    min-height: 44px;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: default;
+}
+
+.topbar-account:hover {
+    border-color: #8dc5bf;
+    background: var(--brand-soft);
 }
 
 .topbar-avatar {
     display: grid;
     place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--brand-soft);
-    color: var(--brand-dark);
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, #0f766e, #115e59);
+    color: white;
     font-weight: 900;
-}
-
-.network-pill {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    padding: 7px 9px;
-    border: 1px solid #bfdbfe;
-    border-radius: 6px;
-    color: #2563eb;
-    font-size: 0.74rem;
-    font-weight: 700;
-    white-space: nowrap;
-}
-
-.network-medium {
-    border-color: #fcd34d;
-    color: #b45309;
-    background: #fffbeb;
-}
-
-.network-details {
-    min-width: 250px;
-    color: var(--ink);
-}
-
-.network-details h4 {
-    margin: 0 0 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--line);
-    color: var(--brand);
-}
-
-.network-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-    padding: 6px 0;
     font-size: 0.82rem;
+    box-shadow: 0 2px 6px rgba(15,118,110,0.22);
+    flex-shrink: 0;
 }
 
-.network-row span:last-child {
+.topbar-user-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    line-height: 1;
+}
+
+.topbar-user-name {
+    color: var(--ink);
+    font-size: 0.77rem;
     font-weight: 700;
 }
 
-.topbar-action {
-    display: grid;
-    place-items: center;
-    min-height: 38px;
-    color: var(--muted);
-    font-size: 1rem;
-}
-
-.topbar-theme .stButton > button {
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    border-radius: 50%;
-    font-size: 1.1rem;
-}
-
-.topbar-logout {
-    color: #be123c;
-    font-size: 0.78rem;
+.topbar-role-badge {
+    display: inline-flex;
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-size: 0.6rem;
     font-weight: 700;
-    white-space: nowrap;
+    width: fit-content;
 }
+
+.role-admin    { background: #ede9fe; color: #7c3aed; }
+.role-employee { background: #ecfdf5; color: #047857; }
 
 .login-page {
     display: flex;
@@ -743,45 +746,61 @@ hr { border-color: var(--line) !important; }
     background: var(--brand-dark);
 }
 
-.st-key-topbar_logout button {
-    min-height: 38px;
-    padding: 7px 12px;
-    border-color: #fecdd3;
-    border-radius: 999px;
-    background: #fff1f2;
-    color: #be123c;
-    font-size: 0.78rem;
+/* Icon-only topbar buttons */
+.st-key-theme_toggle > button {
+    width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    font-size: 1.1rem !important;
+    line-height: 1 !important;
+    border-color: var(--line) !important;
+    background: var(--surface-soft) !important;
 }
 
-.st-key-user_management_toggle button {
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    border-radius: 50%;
-    color: var(--brand);
-    font-size: 1.1rem;
+.st-key-theme_toggle > button:hover {
+    background: var(--brand-soft) !important;
+    border-color: #8dc5bf !important;
+    color: var(--brand) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 14px rgba(15,118,110,0.14) !important;
 }
 
-.st-key-topbar_logout button::before {
-    content: "↪";
-    margin-left: 6px;
-    font-size: 1rem;
-    font-weight: 900;
+.st-key-user_management_toggle > button {
+    width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    border-radius: 10px !important;
+    border-color: var(--line) !important;
+    background: var(--surface-soft) !important;
+    color: var(--brand) !important;
 }
 
-.st-key-topbar_logout button:hover {
-    border-color: #fda4af;
-    background: #ffe4e6;
-    color: #9f1239;
+.st-key-user_management_toggle > button:hover {
+    background: var(--brand-soft) !important;
+    border-color: #8dc5bf !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 14px rgba(15,118,110,0.14) !important;
 }
 
-.st-key-theme_toggle button {
-    width: 42px;
-    height: 42px;
-    padding: 0;
-    border-radius: 50%;
-    font-size: 1.15rem;
-    line-height: 1;
+.st-key-topbar_logout > button {
+    min-height: 40px;
+    padding: 7px 14px !important;
+    border-color: #fecdd3 !important;
+    border-radius: 10px !important;
+    background: #fff1f2 !important;
+    color: #be123c !important;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap;
+}
+
+.st-key-topbar_logout > button:hover {
+    border-color: #fda4af !important;
+    background: #ffe4e6 !important;
+    color: #9f1239 !important;
+    box-shadow: 0 4px 14px rgba(190,18,60,0.12) !important;
+    transform: translateY(-1px) !important;
 }
 
 .app-footer {
@@ -1084,15 +1103,22 @@ for key in STATUS_CONFIG:
     if f"raw_{key}" not in st.session_state:
         st.session_state[f"raw_{key}"] = None    # raw DataFrame
 
-# ─── الشريط الجانبي ────────────────────────────────────────────────────────────
-with st.container():
-    topbar_cols = st.columns([0.8, 2.8, 1.2, 0.75, 0.55, 1.3, 0.55, 0.8])
+# ─── الشريط العلوي ─────────────────────────────────────────────────────────────
+with st.container(key="app_topbar"):
+    topbar_cols = st.columns([0.62, 2.65, 1.1, 0.52, 0.52, 1.48, 0.52, 0.88])
+
+    # ── الشعار ──────────────────────────────────────────────────────────────────
     with topbar_cols[0]:
-        st.markdown("<div class='app-topbar topbar-logo'>م</div>", unsafe_allow_html=True)
+        st.markdown("<div class='topbar-logo' title='نظام المندوبين'>م</div>", unsafe_allow_html=True)
 
+    # ── البحث ───────────────────────────────────────────────────────────────────
     with topbar_cols[1]:
-        search_query = st.text_input("بحث", placeholder="اسم المندوب", label_visibility="collapsed", key="topbar_search")
+        search_query = st.text_input(
+            "بحث", placeholder="🔍  ابحث عن اسم المندوب...",
+            label_visibility="collapsed", key="topbar_search"
+        )
 
+    # ── حالة الشبكة (قياس حقيقي) ────────────────────────────────────────────────
     with topbar_cols[2]:
         components.html("""
 <style>
@@ -1100,16 +1126,23 @@ with st.container():
 * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; direction:rtl; }
 body { background:transparent; overflow:hidden; }
 #pill {
-    display:flex; align-items:center; justify-content:center; gap:6px;
-    height:38px; padding:7px 10px;
-    border:1px solid #bfdbfe; border-radius:8px; background:#eff6ff;
-    color:#1d4ed8; font-size:0.72rem; font-weight:700;
-    white-space:nowrap; transition:all 0.3s ease;
+    display:flex; align-items:center; justify-content:center; gap:5px;
+    height:42px; padding:7px 12px;
+    border:1px solid #bfdbfe; border-radius:10px; background:#eff6ff;
+    color:#1d4ed8; font-size:0.71rem; font-weight:700;
+    white-space:nowrap; transition:all 0.35s ease; cursor:default;
+    box-shadow: 0 1px 4px rgba(37,99,235,0.08);
 }
-#pill.medium { border-color:#fcd34d; background:#fffbeb; color:#b45309; }
-#pill.slow   { border-color:#fecdd3; background:#fff1f2; color:#be123c; }
+#pill.good   { border-color:#a7f3d0; background:#ecfdf5; color:#047857;
+               box-shadow:0 1px 4px rgba(4,120,87,0.1); }
+#pill.medium { border-color:#fcd34d; background:#fffbeb; color:#b45309;
+               box-shadow:0 1px 4px rgba(180,83,9,0.1); }
+#pill.slow   { border-color:#fecdd3; background:#fff1f2; color:#be123c;
+               box-shadow:0 1px 4px rgba(190,18,60,0.1); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.measuring { animation: pulse 1.2s ease infinite; }
 </style>
-<div id="pill">⏳ جارٍ القياس...</div>
+<div id="pill" class="measuring">⏳ قياس الشبكة...</div>
 <script>
 (function(){
     var pill = document.getElementById('pill');
@@ -1117,47 +1150,65 @@ body { background:transparent; overflow:hidden; }
     fetch(location.origin + '/?_nc=' + Date.now(), {method:'HEAD', cache:'no-store'})
         .then(function(){
             var ms = Math.round(performance.now() - t0);
-            var cls = ms < 200 ? '' : ms < 500 ? 'medium' : 'slow';
-            var lbl = ms < 200 ? '🟢 جيدة' : ms < 500 ? '🟡 متوسطة' : '🔴 بطيئة';
+            var cls, icon, lbl;
+            if (ms < 150)      { cls='good';   icon='🟢'; lbl='ممتازة'; }
+            else if (ms < 450) { cls='medium'; icon='🟡'; lbl='متوسطة'; }
+            else               { cls='slow';   icon='🔴'; lbl='بطيئة';  }
             pill.className = cls;
-            pill.textContent = lbl + ' (' + ms + ' ms)';
+            pill.textContent = icon + '  ' + lbl + '  (' + ms + ' ms)';
         })
         .catch(function(){
             pill.className = 'slow';
-            pill.textContent = '⚠ غير متصل';
+            pill.textContent = '⚠  غير متصل';
         });
 })();
 </script>
-""", height=44)
+""", height=48)
 
+    # ── تبديل الثيم ─────────────────────────────────────────────────────────────
     with topbar_cols[3]:
-        st.markdown("<div class='topbar-theme'>", unsafe_allow_html=True)
-        theme_label = "☀" if st.session_state.dark_mode else "☾"
-        theme_name = "تفعيل الوضع النهاري" if st.session_state.dark_mode else "تفعيل الوضع الليلي"
-        if st.button(theme_label, key="theme_toggle", help=theme_name, type="secondary"):
+        theme_icon = "☀️" if st.session_state.dark_mode else "🌙"
+        theme_tip  = "الوضع النهاري" if st.session_state.dark_mode else "الوضع الليلي"
+        if st.button(theme_icon, key="theme_toggle", help=theme_tip, type="secondary"):
             st.session_state.dark_mode = not st.session_state.dark_mode
             st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
 
+    # ── الإشعارات ───────────────────────────────────────────────────────────────
     with topbar_cols[4]:
-        st.markdown("<div class='topbar-action'><i class='pi pi-bell'></i></div>", unsafe_allow_html=True)
+        st.markdown("<div class='topbar-bell' title='لا توجد إشعارات جديدة'>🔔</div>", unsafe_allow_html=True)
 
+    # ── بطاقة المستخدم ──────────────────────────────────────────────────────────
     with topbar_cols[5]:
         role_label = "مدير النظام" if st.session_state.current_role == "admin" else "موظف"
-        user_name = st.session_state.current_user or "المستخدم"
-        avatar = user_name[:1].upper()
-        st.markdown(f"<div class='topbar-account'><span class='topbar-avatar'>{avatar}</span><span>{user_name}<br><small>{role_label}</small></span></div>", unsafe_allow_html=True)
+        role_cls   = "role-admin"    if st.session_state.current_role == "admin" else "role-employee"
+        user_name  = st.session_state.current_user or "المستخدم"
+        avatar     = user_name[:1].upper()
+        st.markdown(f"""
+        <div class='topbar-account'>
+            <span class='topbar-avatar'>{avatar}</span>
+            <span class='topbar-user-text'>
+                <span class='topbar-user-name'>{user_name}</span>
+                <span class='topbar-role-badge {role_cls}'>{role_label}</span>
+            </span>
+        </div>""", unsafe_allow_html=True)
 
+    # ── إدارة المستخدمين (للمدير فقط) ──────────────────────────────────────────
     with topbar_cols[6]:
         if st.session_state.current_role == "admin":
-            management_label = "إخفاء إدارة المستخدمين" if st.session_state.show_user_management else "إدارة المستخدمين"
-            if st.button("", key="user_management_toggle", icon=":material/manage_accounts:", help=management_label, type="secondary", use_container_width=True):
+            if st.button("", key="user_management_toggle",
+                         icon=":material/manage_accounts:",
+                         help="إدارة المستخدمين", type="secondary",
+                         use_container_width=True):
                 st.session_state.current_page = "user_management"
                 st.session_state.show_user_management = False
                 st.rerun()
 
+    # ── تسجيل الخروج ────────────────────────────────────────────────────────────
     with topbar_cols[7]:
-        if st.button("تسجيل الخروج", key="topbar_logout", help="تسجيل الخروج", type="secondary", use_container_width=True):
+        if st.button("خروج", key="topbar_logout",
+                     icon=":material/logout:",
+                     help="تسجيل الخروج", type="secondary",
+                     use_container_width=True):
             st.session_state.authenticated = False
             st.session_state.current_user = None
             st.session_state.current_role = None
