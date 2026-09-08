@@ -634,6 +634,29 @@ hr { border-color: var(--line) !important; }
     white-space: nowrap;
 }
 
+.st-key-topbar_logout button {
+    min-height: 38px;
+    padding: 7px 12px;
+    border-color: #fecdd3;
+    border-radius: 999px;
+    background: #fff1f2;
+    color: #be123c;
+    font-size: 0.78rem;
+}
+
+.st-key-topbar_logout button::before {
+    content: "↪";
+    margin-left: 6px;
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.st-key-topbar_logout button:hover {
+    border-color: #fda4af;
+    background: #ffe4e6;
+    color: #9f1239;
+}
+
 .st-key-theme_toggle button {
     width: 42px;
     height: 42px;
@@ -900,7 +923,7 @@ with st.container():
         st.markdown("<div class='topbar-account'><span class='topbar-avatar'>م</span><span>محمد هادي<br><small>شركة امتياز الناصرية</small></span></div>", unsafe_allow_html=True)
 
     with topbar_cols[6]:
-        st.markdown("<div class='topbar-logout'><i class='pi pi-sign-out'></i> خروج</div>", unsafe_allow_html=True)
+        st.button("تسجيل الخروج", key="topbar_logout", help="تسجيل الخروج", type="secondary", use_container_width=True)
 
     st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
 
