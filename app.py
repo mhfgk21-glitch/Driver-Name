@@ -1211,7 +1211,7 @@ with st.container():
                     st.rerun()
 
 # ─── رفع الملفات ──────────────────────────────────────────────────────────────
-st.markdown("<div class='section-title'><i class='pi pi-upload'></i><span>رفع ملفات Excel</span></div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'><i class='pi pi-upload'></i><span>رفع ملفات إكسل</span></div>", unsafe_allow_html=True)
 upload_cols = st.columns(4)
 status_labels = list(STATUS_CONFIG.keys())
 
@@ -1496,11 +1496,11 @@ if has_data:
             )
 
         with exp_cols[1]:
-            st.markdown("<div class='upload-label'><i class='pi pi-file-excel'></i><span>تصدير Excel (كل الحالات)</span></div>", unsafe_allow_html=True)
+            st.markdown("<div class='upload-label'><i class='pi pi-file-excel'></i><span>تصدير إكسل (كل الحالات)</span></div>", unsafe_allow_html=True)
             raw_frames = {s: st.session_state[f"raw_{s}"] for s in STATUS_CONFIG}
             excel_bytes = to_excel_bytes(raw_frames)
             st.download_button(
-                "تنزيل Excel",
+                "تنزيل إكسل",
                 excel_bytes,
                 "drivers_data.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -1532,7 +1532,7 @@ else:
     st.markdown("""
     <div style="text-align:center; padding: 60px 20px; color: #667085;">
         <div style="font-size:4rem; color:#0f766e"><i class="pi pi-inbox"></i></div>
-        <div style="font-size:1.2rem; margin-top:12px">ارفع ملفات Excel للبدء</div>
+        <div style="font-size:1.2rem; margin-top:12px">ارفع ملفات إكسل للبدء</div>
         <div style="font-size:0.9rem; margin-top:6px">يمكنك رفع ملف واحد أو أكثر من الحالات الأربع</div>
     </div>
     """, unsafe_allow_html=True)
