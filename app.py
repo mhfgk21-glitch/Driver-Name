@@ -25,6 +25,8 @@ if "current_role" not in st.session_state:
     st.session_state.current_role = None
 if "show_user_management" not in st.session_state:
     st.session_state.show_user_management = False
+if "current_page" not in st.session_state:
+    st.session_state.current_page = "home"
 
 AUTH_USERS = {
     os.getenv("APP_ADMIN_USERNAME", "admin"): {
@@ -893,6 +895,58 @@ if not st.session_state.authenticated:
         st.error("بيانات الدخول غير صحيحة")
     st.stop()
 
+if st.session_state.current_page == "user_management" and st.session_state.current_role == "admin":
+    st.markdown("<div class='section-title'><i class='pi pi-users'></i><span>إدارة المستخدمين</span></div>", unsafe_allow_html=True)
+    st.caption("إدارة حسابات الموظفين وصلاحياتهم")
+
+    if st.button("العودة إلى الصفحة الرئيسية", icon=":material/arrow_back:", key="back_home"):
+        st.session_state.current_page = "home"
+        st.session_state.show_user_management = False
+        st.rerun()
+
+    with st.container(border=True):
+        user_rows = [
+            {"اسم المستخدم": username, "الدور": account["label"]}
+            for username, account in st.session_state.managed_users.items()
+        ]
+        st.dataframe(pd.DataFrame(user_rows), use_container_width=True, hide_index=True)
+
+        with st.form("standalone_add_employee_form", clear_on_submit=True):
+            add_cols = st.columns([1.2, 1.2, 1])
+            with add_cols[0]:
+                new_username = st.text_input("اسم الموظف", placeholder="employee2")
+            with add_cols[1]:
+                new_password = st.text_input("كلمة المرور", type="password")
+            with add_cols[2]:
+                add_employee = st.form_submit_button("إضافة موظف", use_container_width=True)
+
+        if add_employee:
+            clean_username = new_username.strip()
+            if not clean_username or not new_password:
+                st.warning("أدخل اسم الموظف وكلمة المرور")
+            elif clean_username in st.session_state.managed_users:
+                st.error("اسم المستخدم موجود مسبقًا")
+            else:
+                st.session_state.managed_users[clean_username] = {
+                    "password": new_password,
+                    "role": "employee",
+                    "label": "موظف",
+                }
+                st.success("تمت إضافة الموظف")
+                st.rerun()
+
+        removable_users = [
+            username for username, account in st.session_state.managed_users.items()
+            if account["role"] == "employee"
+        ]
+        if removable_users:
+            delete_user = st.selectbox("حذف موظف", removable_users, key="standalone_delete_user")
+            if st.button("حذف المستخدم المحدد", key="standalone_delete_employee", type="secondary"):
+                del st.session_state.managed_users[delete_user]
+                st.success("تم حذف الموظف")
+                st.rerun()
+    st.stop()
+
 # ─── الثوابت ──────────────────────────────────────────────────────────────────
 STATUS_CONFIG = {
     "قيد التوصيل": {"icon": "🚚", "prime_icon": "pi-truck", "color": "#2563eb", "soft_color": "#eff6ff", "badge": "badge-delivery", "emoji_badge": "🔵"},
@@ -1072,7 +1126,8 @@ with st.container():
         if st.session_state.current_role == "admin":
             management_label = "إخفاء إدارة المستخدمين" if st.session_state.show_user_management else "إدارة المستخدمين"
             if st.button("", key="user_management_toggle", icon=":material/manage_accounts:", help=management_label, type="secondary", use_container_width=True):
-                st.session_state.show_user_management = not st.session_state.show_user_management
+                st.session_state.current_page = "user_management"
+                st.session_state.show_user_management = False
                 st.rerun()
 
     with topbar_cols[7]:
@@ -1081,6 +1136,7 @@ with st.container():
             st.session_state.current_user = None
             st.session_state.current_role = None
             st.session_state.show_user_management = False
+            st.session_state.current_page = "home"
             st.rerun()
 
     st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
