@@ -423,6 +423,7 @@ hr { border-color: var(--line) !important; }
 /* Fallback glyphs keep the icon visible when the external PrimeIcons font is blocked. */
 .pi::before { font-family: var(--font-sans); font-weight: 700; }
 .pi-bars::before { content: "☰"; }
+.pi-sun::before { content: "☀"; }
 .pi-sliders-h::before { content: "⚙"; }
 .pi-search::before { content: "⌕"; }
 .pi-upload::before { content: "↑"; }
@@ -500,6 +501,22 @@ hr { border-color: var(--line) !important; }
 
 .control-label .pi {
     color: var(--brand);
+}
+
+.theme-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.theme-toolbar .pi {
+    color: var(--brand);
+    font-size: 1rem;
 }
 
 .app-footer {
@@ -718,6 +735,15 @@ for key in STATUS_CONFIG:
         st.session_state[f"raw_{key}"] = None    # raw DataFrame
 
 # ─── الشريط الجانبي ────────────────────────────────────────────────────────────
+theme_cols = st.columns([8, 1])
+with theme_cols[1]:
+    theme_icon = "pi-sun" if st.session_state.dark_mode else "pi-moon"
+    theme_label = "نهاري" if st.session_state.dark_mode else "ليلي"
+    st.markdown(f"<div class='theme-toolbar'><i class='pi {theme_icon}'></i><span>المظهر</span></div>", unsafe_allow_html=True)
+    if st.button(theme_label, use_container_width=True, type="secondary"):
+        st.session_state.dark_mode = not st.session_state.dark_mode
+        st.rerun()
+
 with st.container():
     st.markdown("""
     <div class="sidebar-brand">
@@ -731,7 +757,7 @@ with st.container():
     st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
 
     with st.container(border=True):
-        control_cols = st.columns([1.35, 1.25, 2.4, 1.15, 1.05])
+        control_cols = st.columns([1.35, 1.25, 2.4, 1.15])
 
         with control_cols[0]:
             use_date_filter = st.toggle("تفعيل فلترة التاريخ", value=False)
@@ -757,13 +783,6 @@ with st.container():
                 for key in STATUS_CONFIG:
                     st.session_state[f"data_{key}"] = None
                     st.session_state[f"raw_{key}"]  = None
-                st.rerun()
-
-        with control_cols[4]:
-            st.markdown("<div class='control-label'>&nbsp;</div>", unsafe_allow_html=True)
-            theme_label = "الوضع النهاري" if st.session_state.dark_mode else "الوضع الليلي"
-            if st.button(theme_label, use_container_width=True, type="secondary"):
-                st.session_state.dark_mode = not st.session_state.dark_mode
                 st.rerun()
 
 # ─── رفع الملفات ──────────────────────────────────────────────────────────────
