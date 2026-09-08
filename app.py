@@ -461,6 +461,21 @@ hr { border-color: var(--line) !important; }
     margin-bottom: 6px;
 }
 
+.control-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 24px;
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.control-label .pi {
+    color: var(--brand);
+}
+
 .upload-label .pi {
     display: inline-grid;
     place-items: center;
@@ -611,29 +626,33 @@ with st.container():
     """, unsafe_allow_html=True)
 
     st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
+    control_cols = st.columns([1.35, 1.25, 2.4, 1.15])
 
-    use_date_filter = st.toggle("تفعيل فلترة التاريخ", value=False)
-    if use_date_filter:
-        col_s, col_e = st.columns(2)
-        with col_s:
-            start_date = st.date_input("من", value=date.today() - timedelta(days=30), label_visibility="visible")
-        with col_e:
-            end_date   = st.date_input("إلى", value=date.today(), label_visibility="visible")
-    else:
-        start_date = end_date = None
+    with control_cols[0]:
+        use_date_filter = st.toggle("تفعيل فلترة التاريخ", value=False)
+        if use_date_filter:
+            date_cols = st.columns(2)
+            with date_cols[0]:
+                start_date = st.date_input("من", value=date.today() - timedelta(days=30), label_visibility="visible")
+            with date_cols[1]:
+                end_date = st.date_input("إلى", value=date.today(), label_visibility="visible")
+        else:
+            start_date = end_date = None
 
-    st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
-    merge_mode = st.toggle("دمج كل الحالات معاً", value=False)
+    with control_cols[1]:
+        merge_mode = st.toggle("دمج كل الحالات معاً", value=False)
 
-    st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
-    st.markdown("<div class='section-title'><i class='pi pi-search'></i><span>بحث في النتائج</span></div>", unsafe_allow_html=True)
-    search_query = st.text_input("ابحث عن مندوب...", placeholder="اكتب اسم المندوب", label_visibility="collapsed")
+    with control_cols[2]:
+        st.markdown("<div class='control-label'><i class='pi pi-search'></i><span>بحث في النتائج</span></div>", unsafe_allow_html=True)
+        search_query = st.text_input("ابحث عن مندوب...", placeholder="اكتب اسم المندوب", label_visibility="collapsed")
 
-    if st.button("مسح كل البيانات", use_container_width=True, type="secondary"):
-        for key in STATUS_CONFIG:
-            st.session_state[f"data_{key}"] = None
-            st.session_state[f"raw_{key}"]  = None
-        st.rerun()
+    with control_cols[3]:
+        st.markdown("<div class='control-label'>&nbsp;</div>", unsafe_allow_html=True)
+        if st.button("مسح كل البيانات", use_container_width=True, type="secondary"):
+            for key in STATUS_CONFIG:
+                st.session_state[f"data_{key}"] = None
+                st.session_state[f"raw_{key}"]  = None
+            st.rerun()
 
     st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
     st.markdown("<div style='color:#98a2b3;font-size:0.75rem;text-align:center'>نظام بيانات المندوبين Pro v2.0</div>", unsafe_allow_html=True)
