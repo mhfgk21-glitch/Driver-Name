@@ -16,6 +16,8 @@ st.set_page_config(
 
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
 
 # ─── CSS مخصص ─────────────────────────────────────────────────────────────────
 st.markdown("""
@@ -634,6 +636,85 @@ hr { border-color: var(--line) !important; }
     white-space: nowrap;
 }
 
+.login-page {
+    display: flex;
+    direction: rtl;
+    min-height: 520px;
+    margin: 2rem auto;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+}
+
+.login-panel {
+    display: flex;
+    flex: 0 0 380px;
+    flex-direction: column;
+    justify-content: center;
+    padding: 42px 34px;
+    background: var(--surface);
+}
+
+.login-art {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-height: 520px;
+    background: linear-gradient(135deg, #f0fdfa, #e0f2fe);
+    color: var(--brand-dark);
+}
+
+.login-art .pi {
+    font-size: 8rem;
+    opacity: 0.2;
+}
+
+.login-logo {
+    display: grid;
+    place-items: center;
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 18px;
+    border-radius: 14px;
+    background: var(--brand);
+    color: white;
+    font-size: 1.05rem;
+    font-weight: 900;
+}
+
+.login-title {
+    margin: 0 0 8px;
+    color: var(--ink);
+    font-size: 1.45rem;
+    text-align: center;
+}
+
+.login-subtitle {
+    margin: 0 0 24px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+.login-panel .stTextInput input {
+    min-height: 42px;
+}
+
+.login-panel .stFormSubmitButton button {
+    width: 100%;
+    min-height: 42px;
+    border: 0;
+    background: var(--brand);
+    color: white;
+}
+
+.login-panel .stFormSubmitButton button:hover {
+    background: var(--brand-dark);
+}
+
 .st-key-topbar_logout button {
     min-height: 38px;
     padding: 7px 12px;
@@ -694,6 +775,9 @@ hr { border-color: var(--line) !important; }
     [data-testid="stFileUploader"] section { height: 104px; padding: 8px; }
     .app-topbar { gap: 6px; padding: 8px; overflow-x: auto; }
     .topbar-account { display: none; }
+    .login-page { margin: 0.75rem auto; }
+    .login-panel { flex-basis: 100%; padding: 32px 22px; }
+    .login-art { display: none; }
 }
 
 /* Dark mode is activated by the marker rendered below the theme styles. */
@@ -749,6 +833,28 @@ st.markdown(
     '<span class="theme-dark-marker"></span>' if st.session_state.dark_mode else '<span class="theme-light-marker"></span>',
     unsafe_allow_html=True,
 )
+
+if not st.session_state.authenticated:
+    with st.container(key="login_page"):
+        login_cols = st.columns([1, 1.45])
+        with login_cols[0]:
+            st.markdown("<div class='login-panel'>", unsafe_allow_html=True)
+            st.markdown("<div class='login-logo'>DN</div><h1 class='login-title'>مرحبًا بك</h1><p class='login-subtitle'>سجّل الدخول إلى لوحة بيانات المندوبين</p>", unsafe_allow_html=True)
+            with st.form("login_form"):
+                username = st.text_input("اسم المستخدم", placeholder="أدخل اسم المستخدم")
+                password = st.text_input("كلمة المرور", type="password", placeholder="أدخل كلمة المرور")
+                submitted = st.form_submit_button("تسجيل الدخول", use_container_width=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        with login_cols[1]:
+            st.markdown("<div class='login-art'><i class='pi pi-chart-bar'></i></div>", unsafe_allow_html=True)
+
+    if submitted:
+        if username.strip() and password:
+            st.session_state.authenticated = True
+            st.rerun()
+        st.error("يرجى إدخال اسم المستخدم وكلمة المرور")
+    st.stop()
 
 # ─── الثوابت ──────────────────────────────────────────────────────────────────
 STATUS_CONFIG = {
@@ -923,7 +1029,9 @@ with st.container():
         st.markdown("<div class='topbar-account'><span class='topbar-avatar'>م</span><span>محمد هادي<br><small>شركة امتياز الناصرية</small></span></div>", unsafe_allow_html=True)
 
     with topbar_cols[6]:
-        st.button("تسجيل الخروج", key="topbar_logout", help="تسجيل الخروج", type="secondary", use_container_width=True)
+        if st.button("تسجيل الخروج", key="topbar_logout", help="تسجيل الخروج", type="secondary", use_container_width=True):
+            st.session_state.authenticated = False
+            st.rerun()
 
     st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
 
