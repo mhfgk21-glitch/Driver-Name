@@ -157,20 +157,22 @@ st.markdown("""
     align-items: center;
     justify-content: center;
     gap: 11px;
-    padding: 13px 14px;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 92px;
+    padding: 14px 20px;
     margin-bottom: 20px;
     background: #f0fdfa;
     border: 1px solid #ccfbf1;
     border-radius: 10px;
-    max-width: 420px;
     margin-inline: auto;
 }
 
 .sidebar-brand .brand-icon {
     display: grid;
     place-items: center;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 8px;
     background: var(--brand);
     color: white;
@@ -180,7 +182,7 @@ st.markdown("""
 .sidebar-brand strong {
     display: block;
     color: var(--ink);
-    font-size: 0.94rem;
+    font-size: 1rem;
     line-height: 1.35;
     text-align: center;
 }
@@ -188,7 +190,7 @@ st.markdown("""
 .sidebar-brand small {
     display: block;
     color: var(--muted);
-    font-size: 0.72rem;
+    font-size: 0.76rem;
     margin-top: 2px;
     text-align: center;
 }
@@ -202,7 +204,7 @@ st.markdown("""
     padding-top: 8px;
     border-top: 1px solid #cce5e2;
     color: var(--brand-dark);
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-weight: 700;
 }
 
