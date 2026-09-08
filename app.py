@@ -37,6 +37,11 @@ AUTH_USERS = {
     },
 }
 
+if "managed_users" not in st.session_state:
+    st.session_state.managed_users = {
+        username: dict(account) for username, account in AUTH_USERS.items()
+    }
+
 # ─── CSS مخصص ─────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -868,7 +873,7 @@ if not st.session_state.authenticated:
             st.markdown("<div class='login-art'><i class='pi pi-chart-bar'></i></div>", unsafe_allow_html=True)
 
     if submitted:
-        account = AUTH_USERS.get(username.strip())
+        account = st.session_state.managed_users.get(username.strip())
         if account and password == account["password"]:
             st.session_state.authenticated = True
             st.session_state.current_user = username.strip()
@@ -1085,6 +1090,50 @@ with st.container():
                     st.session_state[f"data_{key}"] = None
                     st.session_state[f"raw_{key}"]  = None
                 st.rerun()
+
+    if st.session_state.current_role == "admin":
+        st.markdown("<div class='section-title'><i class='pi pi-users'></i><span>إدارة المستخدمين</span></div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            user_rows = [
+                {"اسم المستخدم": username, "الدور": account["label"]}
+                for username, account in st.session_state.managed_users.items()
+            ]
+            st.dataframe(pd.DataFrame(user_rows), use_container_width=True, hide_index=True)
+
+            with st.form("add_employee_form", clear_on_submit=True):
+                add_cols = st.columns([1.2, 1.2, 1])
+                with add_cols[0]:
+                    new_username = st.text_input("اسم الموظف", placeholder="employee2")
+                with add_cols[1]:
+                    new_password = st.text_input("كلمة المرور", type="password")
+                with add_cols[2]:
+                    add_employee = st.form_submit_button("إضافة موظف", use_container_width=True)
+
+            if add_employee:
+                clean_username = new_username.strip()
+                if not clean_username or not new_password:
+                    st.warning("أدخل اسم الموظف وكلمة المرور")
+                elif clean_username in st.session_state.managed_users:
+                    st.error("اسم المستخدم موجود مسبقًا")
+                else:
+                    st.session_state.managed_users[clean_username] = {
+                        "password": new_password,
+                        "role": "employee",
+                        "label": "موظف",
+                    }
+                    st.success("تمت إضافة الموظف")
+                    st.rerun()
+
+            removable_users = [
+                username for username, account in st.session_state.managed_users.items()
+                if account["role"] == "employee"
+            ]
+            if removable_users:
+                delete_user = st.selectbox("حذف موظف", removable_users, key="delete_user_select")
+                if st.button("حذف المستخدم المحدد", key="delete_employee", type="secondary"):
+                    del st.session_state.managed_users[delete_user]
+                    st.success("تم حذف الموظف")
+                    st.rerun()
 
 # ─── رفع الملفات ──────────────────────────────────────────────────────────────
 st.markdown("<div class='section-title'><i class='pi pi-upload'></i><span>رفع ملفات Excel</span></div>", unsafe_allow_html=True)
