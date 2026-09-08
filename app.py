@@ -506,7 +506,7 @@ hr { border-color: var(--line) !important; }
 .theme-toolbar {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: center;
     gap: 8px;
     margin-bottom: 8px;
     color: var(--muted);
@@ -746,7 +746,7 @@ with st.container():
     </div>
     """, unsafe_allow_html=True)
 
-    theme_cols = st.columns([8, 1])
+    theme_cols = st.columns([3, 2, 3])
     with theme_cols[1]:
         theme_icon = "pi-sun" if st.session_state.dark_mode else "pi-moon"
         theme_label = "نهاري" if st.session_state.dark_mode else "ليلي"
