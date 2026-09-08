@@ -18,6 +18,7 @@ st.set_page_config(
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+@import url('https://unpkg.com/primeicons@7.0.0/primeicons.css');
 
 :root {
     --ink: #172033;
@@ -210,6 +211,34 @@ hr { border-color: var(--line) !important; }
     letter-spacing: 0;
 }
 
+.pi {
+    font-size: 0.95em;
+    vertical-align: -1px;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--ink);
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin: 4px 0 14px;
+}
+
+.section-title .pi {
+    color: var(--brand);
+    font-size: 1.05em;
+}
+
+.upload-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
 @media (max-width: 768px) {
     .stat-card { min-height: 96px; padding: 14px 10px; }
     .stat-value { font-size: 1.6rem; }
@@ -220,10 +249,10 @@ hr { border-color: var(--line) !important; }
 
 # ─── الثوابت ──────────────────────────────────────────────────────────────────
 STATUS_CONFIG = {
-    "قيد التوصيل": {"icon": "🚚", "color": "#60a5fa", "badge": "badge-delivery", "emoji_badge": "🔵"},
-    "المؤجل":       {"icon": "⏳", "color": "#fbbf24", "badge": "badge-deferred", "emoji_badge": "🟡"},
-    "الراجع":       {"icon": "↩️", "color": "#f87171", "badge": "badge-returned",  "emoji_badge": "🔴"},
-    "تم التسليم":   {"icon": "✅", "color": "#34d399", "badge": "badge-delivered", "emoji_badge": "🟢"},
+    "قيد التوصيل": {"icon": "🚚", "prime_icon": "pi-truck", "color": "#2563eb", "badge": "badge-delivery", "emoji_badge": "🔵"},
+    "المؤجل":       {"icon": "⏳", "prime_icon": "pi-clock", "color": "#b45309", "badge": "badge-deferred", "emoji_badge": "🟡"},
+    "الراجع":       {"icon": "↩️", "prime_icon": "pi-replay", "color": "#be123c", "badge": "badge-returned",  "emoji_badge": "🔴"},
+    "تم التسليم":   {"icon": "✅", "prime_icon": "pi-check-circle", "color": "#047857", "badge": "badge-delivered", "emoji_badge": "🟢"},
 }
 
 POSSIBLE_DRIVER_COLS = ['drivername', 'اسم المندوب', 'المندوب', 'driver', 'الاسم']
@@ -337,7 +366,7 @@ for key in STATUS_CONFIG:
 
 # ─── الشريط الجانبي ────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### ⚙️ إعدادات المعالجة")
+    st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
     st.divider()
 
     use_date_filter = st.toggle("🗓️ تفعيل فلترة التاريخ", value=False)
@@ -354,7 +383,7 @@ with st.sidebar:
     merge_mode = st.toggle("🔗 دمج كل الحالات معاً", value=False)
 
     st.divider()
-    st.markdown("### 🔍 بحث في النتائج")
+    st.markdown("<div class='section-title'><i class='pi pi-search'></i><span>بحث في النتائج</span></div>", unsafe_allow_html=True)
     search_query = st.text_input("ابحث عن مندوب...", placeholder="اكتب اسم المندوب", label_visibility="collapsed")
 
     st.divider()
@@ -368,14 +397,14 @@ with st.sidebar:
     st.markdown("<div style='color:#98a2b3;font-size:0.75rem;text-align:center'>نظام بيانات المندوبين Pro v2.0</div>", unsafe_allow_html=True)
 
 # ─── رفع الملفات ──────────────────────────────────────────────────────────────
-st.markdown("### 📂 رفع ملفات Excel")
+st.markdown("<div class='section-title'><i class='pi pi-upload'></i><span>رفع ملفات Excel</span></div>", unsafe_allow_html=True)
 upload_cols = st.columns(4)
 status_labels = list(STATUS_CONFIG.keys())
 
 for i, status in enumerate(status_labels):
     cfg = STATUS_CONFIG[status]
     with upload_cols[i]:
-        st.markdown(f"<div style='color:{cfg['color']};font-weight:700;margin-bottom:6px'>{cfg['icon']} {status}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='upload-label' style='color:{cfg['color']}'><i class='pi {cfg['prime_icon']}'></i><span>{status}</span></div>", unsafe_allow_html=True)
         uploaded = st.file_uploader(f"upload_{status}", type=["xlsx", "xls"], key=f"up_{status}", label_visibility="collapsed")
 
         if uploaded:
@@ -406,7 +435,7 @@ all_processed = {s: st.session_state[f"data_{s}"] for s in STATUS_CONFIG}
 has_data = any(v is not None for v in all_processed.values())
 
 # ─── لوحة الإحصائيات ──────────────────────────────────────────────────────────
-st.markdown("### 📊 لوحة الإحصائيات")
+st.markdown("<div class='section-title'><i class='pi pi-chart-bar'></i><span>لوحة الإحصائيات</span></div>", unsafe_allow_html=True)
 stat_cols = st.columns(4)
 
 total_drivers = set()
@@ -426,19 +455,19 @@ top_driver_name, top_driver_count = get_top_driver(all_processed)
 
 with stat_cols[0]:
     st.markdown(f"""<div class="stat-card">
-        <div class="stat-label">👥 إجمالي المندوبين</div>
+        <div class="stat-label"><i class="pi pi-users"></i> إجمالي المندوبين</div>
         <div class="stat-value stat-blue">{len(total_drivers)}</div>
     </div>""", unsafe_allow_html=True)
 
 with stat_cols[1]:
     st.markdown(f"""<div class="stat-card">
-        <div class="stat-label">📦 إجمالي الطلبات</div>
+        <div class="stat-label"><i class="pi pi-box"></i> إجمالي الطلبات</div>
         <div class="stat-value stat-green">{total_codes}</div>
     </div>""", unsafe_allow_html=True)
 
 with stat_cols[2]:
     st.markdown(f"""<div class="stat-card">
-        <div class="stat-label">🏆 الأعلى طلباً</div>
+        <div class="stat-label"><i class="pi pi-trophy"></i> الأعلى طلباً</div>
         <div class="stat-value stat-orange" style="font-size:1.2rem">{top_driver_name}</div>
         <div class="stat-label">{top_driver_count if top_driver_count else ''} طلب</div>
     </div>""", unsafe_allow_html=True)
@@ -446,7 +475,7 @@ with stat_cols[2]:
 with stat_cols[3]:
     active = sum(1 for v in all_processed.values() if v is not None)
     st.markdown(f"""<div class="stat-card">
-        <div class="stat-label">📋 الحالات المُحمّلة</div>
+        <div class="stat-label"><i class="pi pi-list"></i> الحالات المُحمّلة</div>
         <div class="stat-value stat-purple">{active} / 4</div>
     </div>""", unsafe_allow_html=True)
 
@@ -626,7 +655,7 @@ if has_data:
         exp_cols = st.columns(3)
 
         with exp_cols[0]:
-            st.markdown("**📄 تصدير النص الكامل**")
+            st.markdown("<div class='upload-label'><i class='pi pi-file-edit'></i><span>تصدير النص الكامل</span></div>", unsafe_allow_html=True)
             full_text = ""
             if merge_mode:
                 combined_all: dict = {}
@@ -653,7 +682,7 @@ if has_data:
             )
 
         with exp_cols[1]:
-            st.markdown("**📊 تصدير Excel (كل الحالات)**")
+            st.markdown("<div class='upload-label'><i class='pi pi-file-excel'></i><span>تصدير Excel (كل الحالات)</span></div>", unsafe_allow_html=True)
             raw_frames = {s: st.session_state[f"raw_{s}"] for s in STATUS_CONFIG}
             excel_bytes = to_excel_bytes(raw_frames)
             st.download_button(
@@ -666,7 +695,7 @@ if has_data:
             )
 
         with exp_cols[2]:
-            st.markdown("**📋 تصدير جدول المندوبين**")
+            st.markdown("<div class='upload-label'><i class='pi pi-table'></i><span>تصدير جدول المندوبين</span></div>", unsafe_allow_html=True)
             rows_exp = []
             for status, data in all_processed.items():
                 if data:
@@ -687,8 +716,8 @@ if has_data:
 else:
     # لا توجد بيانات بعد
     st.markdown("""
-    <div style="text-align:center; padding: 60px 20px; color: rgba(255,255,255,0.4);">
-        <div style="font-size:4rem">📂</div>
+    <div style="text-align:center; padding: 60px 20px; color: #667085;">
+        <div style="font-size:4rem; color:#0f766e"><i class="pi pi-inbox"></i></div>
         <div style="font-size:1.2rem; margin-top:12px">ارفع ملفات Excel للبدء</div>
         <div style="font-size:0.9rem; margin-top:6px">يمكنك رفع ملف واحد أو أكثر من الحالات الأربع</div>
     </div>
