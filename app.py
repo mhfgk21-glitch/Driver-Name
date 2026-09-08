@@ -747,6 +747,7 @@ with st.container():
 
     st.markdown("""
     <div class="sidebar-brand">
+        <div class="brand-icon"><i class="pi pi-chart-bar"></i></div>
         <div>
             <strong>لوحة التحكم</strong>
             <small>إدارة ملفات المندوبين</small>
