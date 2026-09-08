@@ -4,6 +4,7 @@ import streamlit.components.v1 as components
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import os
 from io import BytesIO
 from datetime import date, timedelta
 
@@ -18,6 +19,23 @@ if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
+if "current_user" not in st.session_state:
+    st.session_state.current_user = None
+if "current_role" not in st.session_state:
+    st.session_state.current_role = None
+
+AUTH_USERS = {
+    os.getenv("APP_ADMIN_USERNAME", "admin"): {
+        "password": os.getenv("APP_ADMIN_PASSWORD", "admin123"),
+        "role": "admin",
+        "label": "مدير النظام",
+    },
+    os.getenv("APP_EMPLOYEE_USERNAME", "employee"): {
+        "password": os.getenv("APP_EMPLOYEE_PASSWORD", "employee123"),
+        "role": "employee",
+        "label": "موظف",
+    },
+}
 
 # ─── CSS مخصص ─────────────────────────────────────────────────────────────────
 st.markdown("""
@@ -850,10 +868,13 @@ if not st.session_state.authenticated:
             st.markdown("<div class='login-art'><i class='pi pi-chart-bar'></i></div>", unsafe_allow_html=True)
 
     if submitted:
-        if username.strip() and password:
+        account = AUTH_USERS.get(username.strip())
+        if account and password == account["password"]:
             st.session_state.authenticated = True
+            st.session_state.current_user = username.strip()
+            st.session_state.current_role = account["role"]
             st.rerun()
-        st.error("يرجى إدخال اسم المستخدم وكلمة المرور")
+        st.error("بيانات الدخول غير صحيحة")
     st.stop()
 
 # ─── الثوابت ──────────────────────────────────────────────────────────────────
@@ -1026,11 +1047,16 @@ with st.container():
         st.markdown("<div class='topbar-action'><i class='pi pi-bell'></i></div>", unsafe_allow_html=True)
 
     with topbar_cols[5]:
-        st.markdown("<div class='topbar-account'><span class='topbar-avatar'>م</span><span>محمد هادي<br><small>شركة امتياز الناصرية</small></span></div>", unsafe_allow_html=True)
+        role_label = "مدير النظام" if st.session_state.current_role == "admin" else "موظف"
+        user_name = st.session_state.current_user or "المستخدم"
+        avatar = user_name[:1].upper()
+        st.markdown(f"<div class='topbar-account'><span class='topbar-avatar'>{avatar}</span><span>{user_name}<br><small>{role_label}</small></span></div>", unsafe_allow_html=True)
 
     with topbar_cols[6]:
         if st.button("تسجيل الخروج", key="topbar_logout", help="تسجيل الخروج", type="secondary", use_container_width=True):
             st.session_state.authenticated = False
+            st.session_state.current_user = None
+            st.session_state.current_role = None
             st.rerun()
 
     st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
@@ -1054,7 +1080,7 @@ with st.container():
 
         with control_cols[2]:
             st.markdown("<div class='control-label'>&nbsp;</div>", unsafe_allow_html=True)
-            if st.button("مسح كل البيانات", use_container_width=True, type="secondary"):
+            if st.button("مسح كل البيانات", use_container_width=True, type="secondary", disabled=st.session_state.current_role != "admin"):
                 for key in STATUS_CONFIG:
                     st.session_state[f"data_{key}"] = None
                     st.session_state[f"raw_{key}"]  = None
