@@ -652,33 +652,34 @@ with st.container():
     </div>
     """, unsafe_allow_html=True)
 
-    control_cols = st.columns([1.35, 1.25, 2.4, 1.15])
+    with st.container(border=True):
+        control_cols = st.columns([1.35, 1.25, 2.4, 1.15])
 
-    with control_cols[0]:
-        use_date_filter = st.toggle("تفعيل فلترة التاريخ", value=False)
-        if use_date_filter:
-            date_cols = st.columns(2)
-            with date_cols[0]:
-                start_date = st.date_input("من", value=date.today() - timedelta(days=30), label_visibility="visible")
-            with date_cols[1]:
-                end_date = st.date_input("إلى", value=date.today(), label_visibility="visible")
-        else:
-            start_date = end_date = None
+        with control_cols[0]:
+            use_date_filter = st.toggle("تفعيل فلترة التاريخ", value=False)
+            if use_date_filter:
+                date_cols = st.columns(2)
+                with date_cols[0]:
+                    start_date = st.date_input("من", value=date.today() - timedelta(days=30), label_visibility="visible")
+                with date_cols[1]:
+                    end_date = st.date_input("إلى", value=date.today(), label_visibility="visible")
+            else:
+                start_date = end_date = None
 
-    with control_cols[1]:
-        merge_mode = st.toggle("دمج كل الحالات معاً", value=False)
+        with control_cols[1]:
+            merge_mode = st.toggle("دمج كل الحالات معاً", value=False)
 
-    with control_cols[2]:
-        st.markdown("<div class='control-label'><i class='pi pi-search'></i><span>بحث في النتائج</span></div>", unsafe_allow_html=True)
-        search_query = st.text_input("ابحث عن مندوب...", placeholder="اكتب اسم المندوب", label_visibility="collapsed")
+        with control_cols[2]:
+            st.markdown("<div class='control-label'><i class='pi pi-search'></i><span>بحث في النتائج</span></div>", unsafe_allow_html=True)
+            search_query = st.text_input("ابحث عن مندوب...", placeholder="اكتب اسم المندوب", label_visibility="collapsed")
 
-    with control_cols[3]:
-        st.markdown("<div class='control-label'>&nbsp;</div>", unsafe_allow_html=True)
-        if st.button("مسح كل البيانات", use_container_width=True, type="secondary"):
-            for key in STATUS_CONFIG:
-                st.session_state[f"data_{key}"] = None
-                st.session_state[f"raw_{key}"]  = None
-            st.rerun()
+        with control_cols[3]:
+            st.markdown("<div class='control-label'>&nbsp;</div>", unsafe_allow_html=True)
+            if st.button("مسح كل البيانات", use_container_width=True, type="secondary"):
+                for key in STATUS_CONFIG:
+                    st.session_state[f"data_{key}"] = None
+                    st.session_state[f"raw_{key}"]  = None
+                st.rerun()
 
     st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
     st.markdown("<div style='color:#98a2b3;font-size:0.75rem;text-align:center'>نظام بيانات المندوبين Pro v2.0</div>", unsafe_allow_html=True)
