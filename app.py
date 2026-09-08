@@ -550,16 +550,97 @@ hr { border-color: var(--line) !important; }
 }
 
 /* ── Topbar container ──────────────────────────────────────────── */
-.st-key-app_topbar [data-testid="stHorizontalBlock"] {
-    align-items: center !important;
-    min-height: 60px;
-    padding: 8px 18px;
+.st-key-app_topbar {
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 14px;
     box-shadow: 0 4px 24px rgba(23,32,51,0.07), 0 1px 3px rgba(23,32,51,0.04);
+    padding: 10px 18px 8px 18px;
     margin-bottom: 20px;
+}
+
+.st-key-app_topbar [data-testid="stHorizontalBlock"] {
+    align-items: center !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 8px;
+}
+
+.topbar-subdivider {
+    height: 1px;
+    background: var(--line);
+    margin: 8px 0 10px 0;
+    opacity: 0.8;
+}
+
+.topbar-opt-hint {
+    font-size: 0.76rem;
+    color: var(--muted);
+    line-height: 1.4;
+    padding: 5px 10px;
+    background: var(--surface-soft);
+    border-radius: 8px;
+    border: 1px dashed var(--line);
+    display: inline-flex;
+    align-items: center;
     gap: 6px;
+}
+
+.st-key-opt_clear_all > button {
+    height: 38px !important;
+    min-height: 38px !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    border-color: #fecdd3 !important;
+    background: #fff1f2 !important;
+    color: #be123c !important;
+    white-space: nowrap !important;
+    padding: 4px 12px !important;
+    transition: all 0.2s ease !important;
+}
+
+.st-key-opt_clear_all > button:hover:not(:disabled) {
+    border-color: #fda4af !important;
+    background: #ffe4e6 !important;
+    color: #9f1239 !important;
+    box-shadow: 0 3px 10px rgba(190,18,60,0.15) !important;
+    transform: translateY(-1px) !important;
+}
+
+.st-key-opt_clear_all > button:disabled {
+    opacity: 0.45 !important;
+    border-color: var(--line) !important;
+    background: var(--surface-soft) !important;
+    color: var(--muted) !important;
+}
+
+.st-key-app_topbar [data-testid="stToggle"] {
+    padding-top: 2px;
+}
+
+.st-key-app_topbar [data-testid="stToggle"] label {
+    font-size: 0.83rem !important;
+    font-weight: 600 !important;
+    color: var(--ink) !important;
+    cursor: pointer;
+}
+
+.st-key-app_topbar [data-testid="stDateInput"] label {
+    font-size: 0.74rem !important;
+    color: var(--muted) !important;
+    font-weight: 600 !important;
+    margin-bottom: 2px !important;
+}
+
+.st-key-app_topbar [data-testid="stDateInput"] input {
+    height: 36px !important;
+    min-height: 36px !important;
+    font-size: 0.8rem !important;
+    border-radius: 8px !important;
 }
 
 /* Logo */
@@ -881,6 +962,24 @@ hr { border-color: var(--line) !important; }
 .stApp:has(.theme-dark-marker) .sidebar-divider,
 .stApp:has(.theme-dark-marker) hr {
     border-color: #334155 !important;
+}
+
+.stApp:has(.theme-dark-marker) .st-key-opt_clear_all > button {
+    background: rgba(190, 18, 60, 0.15) !important;
+    border-color: rgba(190, 18, 60, 0.4) !important;
+    color: #fda4af !important;
+}
+
+.stApp:has(.theme-dark-marker) .st-key-opt_clear_all > button:hover:not(:disabled) {
+    background: rgba(190, 18, 60, 0.28) !important;
+    border-color: #f43f5e !important;
+    color: #ffe4e6 !important;
+}
+
+.stApp:has(.theme-dark-marker) .topbar-opt-hint {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--line);
+    color: var(--muted);
 }
 </style>
 """, unsafe_allow_html=True)
@@ -1216,31 +1315,43 @@ body { background:transparent; overflow:hidden; }
             st.session_state.current_page = "home"
             st.rerun()
 
-    st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
+    # ── خيارات المعالجة المرفوعة للشريط العلوي ────────────────────────────────────
+    st.markdown("<div class='topbar-subdivider'></div>", unsafe_allow_html=True)
 
-    with st.container(border=True):
-        control_cols = st.columns([1.35, 1.25, 1.15])
-
-        with control_cols[0]:
-            use_date_filter = st.toggle("تفعيل فلترة التاريخ", value=False)
-            if use_date_filter:
-                date_cols = st.columns(2)
-                with date_cols[0]:
-                    start_date = st.date_input("من", value=date.today() - timedelta(days=30), label_visibility="visible")
-                with date_cols[1]:
-                    end_date = st.date_input("إلى", value=date.today(), label_visibility="visible")
-            else:
-                start_date = end_date = None
-
-        with control_cols[1]:
-            merge_mode = st.toggle("دمج كل الحالات معاً", value=False)
-
-        with control_cols[2]:
-            st.markdown("<div class='control-label'>&nbsp;</div>", unsafe_allow_html=True)
-            if st.button("مسح كل البيانات", use_container_width=True, type="secondary", disabled=st.session_state.current_role != "admin"):
-                for key in STATUS_CONFIG:
-                    st.session_state[f"data_{key}"] = None
-                    st.session_state[f"raw_{key}"]  = None
+    if st.session_state.get("opt_date_filter", False):
+        opt_cols = st.columns([1.3, 1.1, 1.1, 1.4, 1.1])
+        with opt_cols[0]:
+            use_date_filter = st.toggle("📅 فلترة التاريخ", key="opt_date_filter")
+        with opt_cols[1]:
+            start_date = st.date_input("من", value=date.today() - timedelta(days=30), key="opt_date_from")
+        with opt_cols[2]:
+            end_date = st.date_input("إلى", value=date.today(), key="opt_date_to")
+        with opt_cols[3]:
+            merge_mode = st.toggle("🔀 دمج كل الحالات معاً", key="opt_merge_mode")
+        with opt_cols[4]:
+            if st.button("مسح البيانات", key="opt_clear_all", icon=":material/delete_sweep:",
+                         help="مسح جميع الجداول والبيانات المرفوعة (للمدير فقط)", type="secondary",
+                         use_container_width=True, disabled=st.session_state.current_role != "admin"):
+                for k in STATUS_CONFIG:
+                    st.session_state[f"data_{k}"] = None
+                    st.session_state[f"raw_{k}"] = None
+                st.rerun()
+    else:
+        opt_cols = st.columns([1.3, 1.6, 2.9, 1.2])
+        with opt_cols[0]:
+            use_date_filter = st.toggle("📅 فلترة التاريخ", value=False, key="opt_date_filter")
+            start_date = end_date = None
+        with opt_cols[1]:
+            merge_mode = st.toggle("🔀 دمج كل الحالات معاً", value=False, key="opt_merge_mode")
+        with opt_cols[2]:
+            st.markdown("<div class='topbar-opt-hint'>💡 خيارات المعالجة: فلترة التواريخ ودمج الحالات المرفوعة تلقائياً</div>", unsafe_allow_html=True)
+        with opt_cols[3]:
+            if st.button("مسح البيانات", key="opt_clear_all", icon=":material/delete_sweep:",
+                         help="مسح جميع الجداول والبيانات المرفوعة (للمدير فقط)", type="secondary",
+                         use_container_width=True, disabled=st.session_state.current_role != "admin"):
+                for k in STATUS_CONFIG:
+                    st.session_state[f"data_{k}"] = None
+                    st.session_state[f"raw_{k}"] = None
                 st.rerun()
 
 
