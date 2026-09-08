@@ -580,6 +580,37 @@ hr { border-color: var(--line) !important; }
     white-space: nowrap;
 }
 
+.network-medium {
+    border-color: #fcd34d;
+    color: #b45309;
+    background: #fffbeb;
+}
+
+.network-details {
+    min-width: 250px;
+    color: var(--ink);
+}
+
+.network-details h4 {
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+    color: var(--brand);
+}
+
+.network-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 6px 0;
+    font-size: 0.82rem;
+}
+
+.network-row span:last-child {
+    font-weight: 700;
+}
+
 .topbar-action {
     display: grid;
     place-items: center;
@@ -839,7 +870,19 @@ with st.container():
         search_query = st.text_input("بحث", placeholder="رقم وصل أو هاتف", label_visibility="collapsed", key="topbar_search")
 
     with topbar_cols[2]:
-        st.markdown("<div class='network-pill'><i class='pi pi-wifi'></i><span>جيدة</span><small>(100 ms)</small></div>", unsafe_allow_html=True)
+        with st.popover("متوسطة (548 ms)", icon=":material/wifi:", use_container_width=True):
+            st.markdown("""
+            <div class="network-details">
+                <h4>معلومات الشبكة</h4>
+                <div class="network-row"><span>حالة الاتصال</span><span style="color:#b45309">متوسطة</span></div>
+                <div class="network-row"><span>زمن الاستجابة</span><span>548 ms</span></div>
+                <div class="network-row"><span>نوع الاتصال</span><span>غير محدد</span></div>
+                <div class="network-row"><span>نوع الشبكة</span><span>4G</span></div>
+                <div class="network-row"><span>سرعة التحميل</span><span>0.7 Mbps</span></div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("تحديث", key="refresh_network", icon=":material/refresh:", use_container_width=True):
+                st.rerun()
 
     with topbar_cols[3]:
         st.markdown("<div class='topbar-theme'>", unsafe_allow_html=True)
