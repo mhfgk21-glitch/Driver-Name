@@ -11,7 +11,7 @@ from datetime import date, timedelta
 st.set_page_config(
     page_icon="📦",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ─── CSS مخصص ─────────────────────────────────────────────────────────────────
@@ -602,7 +602,7 @@ for key in STATUS_CONFIG:
         st.session_state[f"raw_{key}"] = None    # raw DataFrame
 
 # ─── الشريط الجانبي ────────────────────────────────────────────────────────────
-with st.sidebar:
+with st.container():
     st.markdown("""
     <div class="sidebar-brand">
         <div class="brand-icon"><i class="pi pi-bars"></i></div>
