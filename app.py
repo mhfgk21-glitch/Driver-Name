@@ -74,10 +74,19 @@ st.markdown("""
     --shadow: 0 12px 30px rgba(23, 32, 51, 0.08);
 }
 
-*, body, .stApp {
-    font-family: var(--font-sans) !important;
+body, .stApp {
+    font-family: var(--font-sans);
     direction: rtl;
     color: var(--ink);
+}
+
+*, p, span, div, button, input, select, textarea, label, h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
+    direction: rtl;
+}
+
+[data-testid="stIconMaterial"] {
+    display: none !important;
 }
 
 .stApp {
@@ -1018,7 +1027,7 @@ if st.session_state.current_page == "user_management" and st.session_state.curre
     st.markdown("<div class='section-title'><i class='pi pi-users'></i><span>إدارة المستخدمين</span></div>", unsafe_allow_html=True)
     st.caption("إدارة حسابات الموظفين وصلاحياتهم")
 
-    if st.button("العودة إلى الصفحة الرئيسية", icon=":material/arrow_back:", key="back_home"):
+    if st.button("العودة إلى الصفحة الرئيسية", key="back_home"):
         st.session_state.current_page = "home"
         st.session_state.show_user_management = False
         st.rerun()
@@ -1294,8 +1303,7 @@ body { background:transparent; overflow:hidden; }
     # ── إدارة المستخدمين (للمدير فقط) ──────────────────────────────────────────
     with topbar_cols[6]:
         if st.session_state.current_role == "admin":
-            if st.button("", key="user_management_toggle",
-                         icon=":material/manage_accounts:",
+            if st.button("⚙️", key="user_management_toggle",
                          help="إدارة المستخدمين", type="secondary",
                          use_container_width=True):
                 st.session_state.current_page = "user_management"
@@ -1305,7 +1313,6 @@ body { background:transparent; overflow:hidden; }
     # ── تسجيل الخروج ────────────────────────────────────────────────────────────
     with topbar_cols[7]:
         if st.button("خروج", key="topbar_logout",
-                     icon=":material/logout:",
                      help="تسجيل الخروج", type="secondary",
                      use_container_width=True):
             st.session_state.authenticated = False
@@ -1329,7 +1336,7 @@ body { background:transparent; overflow:hidden; }
         with opt_cols[3]:
             merge_mode = st.toggle("🔀 دمج كل الحالات معاً", key="opt_merge_mode")
         with opt_cols[4]:
-            if st.button("مسح البيانات", key="opt_clear_all", icon=":material/delete_sweep:",
+            if st.button("مسح البيانات", key="opt_clear_all",
                          help="مسح جميع الجداول والبيانات المرفوعة (للمدير فقط)", type="secondary",
                          use_container_width=True, disabled=st.session_state.current_role != "admin"):
                 for k in STATUS_CONFIG:
@@ -1346,7 +1353,7 @@ body { background:transparent; overflow:hidden; }
         with opt_cols[2]:
             st.markdown("<div class='topbar-opt-hint'>💡 خيارات المعالجة: فلترة التواريخ ودمج الحالات المرفوعة تلقائياً</div>", unsafe_allow_html=True)
         with opt_cols[3]:
-            if st.button("مسح البيانات", key="opt_clear_all", icon=":material/delete_sweep:",
+            if st.button("مسح البيانات", key="opt_clear_all",
                          help="مسح جميع الجداول والبيانات المرفوعة (للمدير فقط)", type="secondary",
                          use_container_width=True, disabled=st.session_state.current_role != "admin"):
                 for k in STATUS_CONFIG:
@@ -1357,7 +1364,7 @@ body { background:transparent; overflow:hidden; }
 
 
 # ─── رفع الملفات ──────────────────────────────────────────────────────────────
-st.markdown("<div class='section-title'><i class='pi pi-upload'></i><span>رفع الملفات (Excel / CSV)</span></div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'><i class='pi pi-upload'></i><span>رفع الملفات</span></div>", unsafe_allow_html=True)
 upload_cols = st.columns(4)
 status_labels = list(STATUS_CONFIG.keys())
 
