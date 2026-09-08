@@ -519,6 +519,90 @@ hr { border-color: var(--line) !important; }
     font-size: 1rem;
 }
 
+.app-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 68px;
+    margin-bottom: 20px;
+    padding: 10px 18px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+}
+
+.topbar-logo {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: var(--brand);
+    color: white;
+    font-size: 0.82rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+}
+
+.topbar-account {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink);
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.topbar-avatar {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--brand-soft);
+    color: var(--brand-dark);
+    font-weight: 900;
+}
+
+.network-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 7px 9px;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    color: #2563eb;
+    font-size: 0.74rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.topbar-action {
+    display: grid;
+    place-items: center;
+    min-height: 38px;
+    color: var(--muted);
+    font-size: 1rem;
+}
+
+.topbar-theme .stButton > button {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 1.1rem;
+}
+
+.topbar-logout {
+    color: #be123c;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
 .st-key-theme_toggle button {
     width: 42px;
     height: 42px;
@@ -554,6 +638,8 @@ hr { border-color: var(--line) !important; }
     .stTabs [data-baseweb="tab"] { padding: 8px 10px; font-size: 0.82rem; }
     .upload-label { min-height: 38px; font-size: 0.82rem; }
     [data-testid="stFileUploader"] section { height: 104px; padding: 8px; }
+    .app-topbar { gap: 6px; padding: 8px; overflow-x: auto; }
+    .topbar-account { display: none; }
 }
 
 /* Dark mode is activated by the marker rendered below the theme styles. */
@@ -745,28 +831,38 @@ for key in STATUS_CONFIG:
 
 # ─── الشريط الجانبي ────────────────────────────────────────────────────────────
 with st.container():
-    st.markdown("""
-    <div class="sidebar-brand">
-        <div class="brand-icon"><i class="pi pi-chart-bar"></i></div>
-        <div>
-            <strong>لوحة التحكم</strong>
-            <small>إدارة ملفات المندوبين</small>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    topbar_cols = st.columns([0.8, 2.8, 1.2, 0.75, 0.55, 1.3, 0.8])
+    with topbar_cols[0]:
+        st.markdown("<div class='app-topbar topbar-logo'>DN</div>", unsafe_allow_html=True)
 
-    theme_cols = st.columns([3, 2, 3])
-    with theme_cols[1]:
+    with topbar_cols[1]:
+        search_query = st.text_input("بحث", placeholder="رقم وصل أو هاتف", label_visibility="collapsed", key="topbar_search")
+
+    with topbar_cols[2]:
+        st.markdown("<div class='network-pill'><i class='pi pi-wifi'></i><span>جيدة</span><small>(100 ms)</small></div>", unsafe_allow_html=True)
+
+    with topbar_cols[3]:
+        st.markdown("<div class='topbar-theme'>", unsafe_allow_html=True)
         theme_label = "☀" if st.session_state.dark_mode else "☾"
         theme_name = "تفعيل الوضع النهاري" if st.session_state.dark_mode else "تفعيل الوضع الليلي"
         if st.button(theme_label, key="theme_toggle", help=theme_name, type="secondary"):
             st.session_state.dark_mode = not st.session_state.dark_mode
             st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with topbar_cols[4]:
+        st.markdown("<div class='topbar-action'><i class='pi pi-bell'></i></div>", unsafe_allow_html=True)
+
+    with topbar_cols[5]:
+        st.markdown("<div class='topbar-account'><span class='topbar-avatar'>م</span><span>محمد هادي<br><small>شركة امتياز الناصرية</small></span></div>", unsafe_allow_html=True)
+
+    with topbar_cols[6]:
+        st.markdown("<div class='topbar-logout'><i class='pi pi-sign-out'></i> خروج</div>", unsafe_allow_html=True)
 
     st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
 
     with st.container(border=True):
-        control_cols = st.columns([1.35, 1.25, 2.4, 1.15])
+        control_cols = st.columns([1.35, 1.25, 1.15])
 
         with control_cols[0]:
             use_date_filter = st.toggle("تفعيل فلترة التاريخ", value=False)
@@ -783,10 +879,6 @@ with st.container():
             merge_mode = st.toggle("دمج كل الحالات معاً", value=False)
 
         with control_cols[2]:
-            st.markdown("<div class='control-label'><i class='pi pi-search'></i><span>بحث في النتائج</span></div>", unsafe_allow_html=True)
-            search_query = st.text_input("ابحث عن مندوب...", placeholder="اكتب اسم المندوب", label_visibility="collapsed")
-
-        with control_cols[3]:
             st.markdown("<div class='control-label'>&nbsp;</div>", unsafe_allow_html=True)
             if st.button("مسح كل البيانات", use_container_width=True, type="secondary"):
                 for key in STATUS_CONFIG:
