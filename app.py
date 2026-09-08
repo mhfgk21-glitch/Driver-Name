@@ -291,8 +291,8 @@ st.markdown("""
     flex-direction: column;
     justify-content: center;
     gap: 8px;
-    min-height: 146px;
-    padding: 16px;
+    min-height: 112px;
+    padding: 10px 12px;
     background: linear-gradient(180deg, #ffffff 0%, #f8fffe 100%);
     border: 1px dashed #9ac9c4;
     border-radius: 12px;
@@ -317,8 +317,8 @@ st.markdown("""
 }
 
 [data-testid="stFileUploader"] section button {
-    min-height: 38px;
-    padding: 8px 18px;
+    min-height: 34px;
+    padding: 6px 14px;
     border: 1px solid var(--p-primary-color);
     border-radius: var(--p-border-radius-md);
     background: var(--p-primary-color);
@@ -343,7 +343,7 @@ st.markdown("""
 [data-testid="stFileUploader"] section button::after {
     content: "اختيار ملف";
     font-family: var(--font-sans);
-    font-size: 0.84rem;
+    font-size: 0.78rem;
 }
 
 [data-testid="stFileUploaderDropzoneInstructions"] {
@@ -357,7 +357,7 @@ st.markdown("""
     display: block;
     margin-bottom: 3px;
     color: var(--ink);
-    font-size: 0.8rem;
+    font-size: 0.74rem;
     font-weight: 600;
 }
 
