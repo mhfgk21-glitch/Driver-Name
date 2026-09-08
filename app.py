@@ -497,6 +497,15 @@ hr { border-color: var(--line) !important; }
     color: var(--brand);
 }
 
+.app-footer {
+    margin-top: 28px;
+    padding: 14px 0 6px;
+    border-top: 1px solid var(--line);
+    color: #98a2b3;
+    font-size: 0.75rem;
+    text-align: center;
+}
+
 .upload-label .pi {
     display: inline-grid;
     place-items: center;
@@ -680,9 +689,6 @@ with st.container():
                     st.session_state[f"data_{key}"] = None
                     st.session_state[f"raw_{key}"]  = None
                 st.rerun()
-
-    st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
-    st.markdown("<div style='color:#98a2b3;font-size:0.75rem;text-align:center'>نظام بيانات المندوبين Pro v2.0</div>", unsafe_allow_html=True)
 
 # ─── رفع الملفات ──────────────────────────────────────────────────────────────
 st.markdown("<div class='section-title'><i class='pi pi-upload'></i><span>رفع ملفات Excel</span></div>", unsafe_allow_html=True)
@@ -1010,3 +1016,5 @@ else:
         <div style="font-size:0.9rem; margin-top:6px">يمكنك رفع ملف واحد أو أكثر من الحالات الأربع</div>
     </div>
     """, unsafe_allow_html=True)
+
+st.markdown("<div class='app-footer'>نظام بيانات المندوبين Pro v2.0</div>", unsafe_allow_html=True)
