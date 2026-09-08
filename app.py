@@ -9,7 +9,6 @@ from datetime import date, timedelta
 
 # ─── إعدادات الصفحة ───────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="نظام معالجة بيانات المندوبين",
     page_icon="📦",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -20,137 +19,130 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
 
+:root {
+    --ink: #172033;
+    --muted: #667085;
+    --line: #e4e8ef;
+    --surface: #ffffff;
+    --surface-soft: #f8fafc;
+    --brand: #0f766e;
+    --brand-dark: #115e59;
+    --brand-soft: #ccfbf1;
+    --shadow: 0 12px 30px rgba(23, 32, 51, 0.08);
+}
+
 *, body, .stApp {
     font-family: 'Cairo', sans-serif !important;
     direction: rtl;
+    color: var(--ink);
 }
 
-/* خلفية التطبيق */
 .stApp {
-    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    background: #f3f6f9;
     min-height: 100vh;
 }
 
-/* شريط العنوان */
-.main-header {
-    background: linear-gradient(90deg, #1a1a2e, #16213e, #0f3460);
-    border: 1px solid rgba(99, 102, 241, 0.3);
-    border-radius: 16px;
-    padding: 20px 30px;
-    margin-bottom: 24px;
-    text-align: center;
-    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
-}
-
-.main-header h1 {
-    color: #fff;
-    font-size: 2rem;
-    font-weight: 900;
-    margin: 0;
-    text-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
-}
-
-.main-header p {
-    color: rgba(255,255,255,0.6);
-    margin: 6px 0 0;
-    font-size: 0.95rem;
-}
-
-/* بطاقات الإحصاء */
 .stat-card {
-    background: linear-gradient(135deg, #1a1a2e, #16213e);
-    border: 1px solid rgba(99, 102, 241, 0.25);
-    border-radius: 14px;
-    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 16px;
     text-align: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    box-shadow: var(--shadow);
     transition: transform 0.2s ease;
+    min-height: 112px;
 }
 
-.stat-card:hover { transform: translateY(-3px); }
+.stat-card:hover {
+    transform: translateY(-2px);
+    border-color: #b7d8d4;
+}
 
 .stat-value {
-    font-size: 2.2rem;
+    color: var(--ink);
+    font-size: 2rem;
     font-weight: 900;
     margin: 6px 0;
 }
 
 .stat-label {
-    color: rgba(255,255,255,0.6);
+    color: var(--muted);
     font-size: 0.9rem;
 }
 
-.stat-blue  { color: #60a5fa; }
-.stat-green { color: #34d399; }
-.stat-orange{ color: #fbbf24; }
-.stat-purple{ color: #a78bfa; }
+.stat-blue  { color: #2563eb; }
+.stat-green { color: #0f766e; }
+.stat-orange{ color: #c2410c; }
+.stat-purple{ color: #7c3aed; }
 
-/* بطاقات الحالات */
 .status-card {
-    border-radius: 14px;
+    border-radius: 10px;
     padding: 18px;
     margin-bottom: 16px;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid var(--line);
+    background: var(--surface);
 }
 
-/* Tabs */
 .stTabs [data-baseweb="tab-list"] {
-    gap: 8px;
-    background: rgba(255,255,255,0.05);
-    border-radius: 12px;
-    padding: 6px;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 5px;
 }
 
 .stTabs [data-baseweb="tab"] {
-    border-radius: 8px;
-    padding: 8px 20px;
+    border-radius: 7px;
+    padding: 9px 18px;
     font-family: 'Cairo', sans-serif !important;
     font-weight: 600;
-    color: rgba(255,255,255,0.7);
+    color: var(--muted);
     background: transparent;
     border: none;
 }
 
 .stTabs [aria-selected="true"] {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+    background: var(--brand) !important;
     color: white !important;
 }
 
-/* Sidebar */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #1a1a2e, #0f0c29);
-    border-left: 1px solid rgba(99, 102, 241, 0.2);
+    background: #ffffff;
+    border-left: 1px solid var(--line);
+    box-shadow: -8px 0 28px rgba(23, 32, 51, 0.04);
 }
 
 [data-testid="stSidebar"] .stMarkdown h3 {
-    color: #a78bfa;
+    color: var(--ink);
     font-size: 1rem;
 }
 
-/* أزرار */
 .stButton > button {
-    border-radius: 10px;
+    border-radius: 8px;
     font-family: 'Cairo', sans-serif !important;
     font-weight: 700;
-    padding: 10px 24px;
+    padding: 9px 18px;
     transition: all 0.2s ease;
-    border: none;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
 }
 
 .stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    transform: translateY(-1px);
+    border-color: #8dc5bf;
+    color: var(--brand-dark);
+    box-shadow: 0 6px 18px rgba(15, 118, 110, 0.14);
 }
 
-/* مربع النتائج */
 .result-box {
-    background: rgba(15, 12, 41, 0.7);
-    border: 1px solid rgba(99, 102, 241, 0.3);
-    border-radius: 14px;
-    padding: 20px;
-    font-family: 'Cairo', monospace;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 20px;
+    font-family: 'Cairo', sans-serif;
     white-space: pre-wrap;
-    color: #e2e8f0;
+    color: var(--ink);
     line-height: 1.8;
     max-height: 500px;
     overflow-y: auto;
@@ -158,59 +150,70 @@ st.markdown("""
     direction: rtl;
 }
 
-/* Badge الحالة */
 .badge {
     display: inline-block;
-    padding: 4px 12px;
-    border-radius: 20px;
+    padding: 4px 10px;
+    border-radius: 999px;
     font-size: 0.8rem;
     font-weight: 700;
     margin: 2px;
 }
 
-.badge-delivery { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid #60a5fa; }
-.badge-deferred { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid #fbbf24; }
-.badge-returned { background: rgba(239,68,68,0.2);  color: #f87171; border: 1px solid #f87171; }
-.badge-delivered{ background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid #34d399; }
+.badge-delivery { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.badge-deferred { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.badge-returned { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+.badge-delivered{ background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
 
-/* شريط البحث */
 .stTextInput > div > div > input {
-    background: rgba(255,255,255,0.05) !important;
-    border: 1px solid rgba(99, 102, 241, 0.3) !important;
-    border-radius: 10px !important;
-    color: white !important;
+    background: var(--surface) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 8px !important;
+    color: var(--ink) !important;
     font-family: 'Cairo', sans-serif !important;
     direction: rtl;
 }
 
-/* DataFrames */
+[data-testid="stFileUploader"] section {
+    background: var(--surface-soft);
+    border: 1px dashed #b7c4d4;
+    border-radius: 9px;
+}
+
+[data-testid="stFileUploader"] section:hover {
+    border-color: var(--brand);
+    background: #f0fdfa;
+}
+
 .stDataFrame {
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-/* Divider */
-hr { border-color: rgba(99, 102, 241, 0.2) !important; }
-
-/* Metric */
-[data-testid="metric-container"] {
-    background: rgba(99, 102, 241, 0.1);
-    border: 1px solid rgba(99, 102, 241, 0.25);
-    border-radius: 12px;
-    padding: 12px;
-}
-
-/* Success/Error/Warning */
-.stSuccess, .stError, .stWarning, .stInfo {
+    border: 1px solid var(--line);
     border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
 }
 
-/* File uploader */
-[data-testid="stFileUploader"] {
-    background: rgba(99, 102, 241, 0.05);
-    border: 2px dashed rgba(99, 102, 241, 0.4);
-    border-radius: 14px;
-    padding: 10px;
+hr { border-color: var(--line) !important; }
+
+[data-testid="metric-container"] {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 12px;
+    box-shadow: var(--shadow);
+}
+
+.stSuccess, .stError, .stWarning, .stInfo, [data-testid="stAlert"] {
+    border-radius: 8px;
+}
+
+.stMarkdown h3, .stMarkdown h4 {
+    color: var(--ink);
+    letter-spacing: 0;
+}
+
+@media (max-width: 768px) {
+    .stat-card { min-height: 96px; padding: 14px 10px; }
+    .stat-value { font-size: 1.6rem; }
+    .stTabs [data-baseweb="tab"] { padding: 8px 10px; font-size: 0.82rem; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -279,7 +282,7 @@ def render_copy_button(text: str, key: str) -> None:
     components.html(f"""
     <button id="copy-{key}" style="
         width: 100%; padding: 10px 12px; border: 0; border-radius: 10px;
-        background: #6366f1; color: white; font-family: Cairo, sans-serif;
+        background: #0f766e; color: white; font-family: Cairo, sans-serif;
         font-size: 14px; font-weight: 700; cursor: pointer;
     ">📋 نسخ</button>
     <script>
@@ -332,14 +335,6 @@ for key in STATUS_CONFIG:
     if f"raw_{key}" not in st.session_state:
         st.session_state[f"raw_{key}"] = None    # raw DataFrame
 
-# ─── العنوان الرئيسي ──────────────────────────────────────────────────────────
-st.markdown("""
-<div class="main-header">
-    <h1>📦 نظام معالجة بيانات المندوبين</h1>
-    <p>رفع ملفات Excel • تحليل ذكي • إحصائيات متقدمة • تصدير النتائج</p>
-</div>
-""", unsafe_allow_html=True)
-
 # ─── الشريط الجانبي ────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### ⚙️ إعدادات المعالجة")
@@ -370,7 +365,7 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    st.markdown("<div style='color:rgba(255,255,255,0.3);font-size:0.75rem;text-align:center'>نظام بيانات المندوبين Pro v2.0</div>", unsafe_allow_html=True)
+    st.markdown("<div style='color:#98a2b3;font-size:0.75rem;text-align:center'>نظام بيانات المندوبين Pro v2.0</div>", unsafe_allow_html=True)
 
 # ─── رفع الملفات ──────────────────────────────────────────────────────────────
 st.markdown("### 📂 رفع ملفات Excel")
@@ -536,17 +531,17 @@ if has_data:
                     df_chart, x="المندوب", y="الطلبات",
                     title="أعلى 15 مندوبًا من حيث عدد الطلبات",
                     color="الطلبات",
-                    color_continuous_scale=["#6366f1", "#8b5cf6", "#a78bfa"],
+                    color_continuous_scale=["#99f6e4", "#0f766e", "#115e59"],
                     text="الطلبات",
                 )
                 fig.update_traces(textposition='outside', textfont_size=12)
                 fig.update_layout(
                     paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(15,12,41,0.5)',
-                    font=dict(family="Cairo", color="white"),
+                    plot_bgcolor='#f8fafc',
+                    font=dict(family="Cairo", color="#172033"),
                     title_font_size=16,
-                    xaxis=dict(tickangle=-30, gridcolor='rgba(255,255,255,0.05)'),
-                    yaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
+                    xaxis=dict(tickangle=-30, gridcolor='#e4e8ef'),
+                    yaxis=dict(gridcolor='#e4e8ef'),
                     coloraxis_showscale=False,
                 )
                 st.plotly_chart(fig, use_container_width=True)
@@ -566,11 +561,11 @@ if has_data:
                 ))
                 fig.update_layout(
                     paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(family="Cairo", color="white"),
+                    font=dict(family="Cairo", color="#172033"),
                     title="توزيع الطلبات حسب الحالة",
                     title_font_size=16,
                     showlegend=True,
-                    legend=dict(font=dict(color="white")),
+                    legend=dict(font=dict(color="#172033")),
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
@@ -590,12 +585,12 @@ if has_data:
                 )
                 fig.update_layout(
                     paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(15,12,41,0.5)',
-                    font=dict(family="Cairo", color="white"),
+                    plot_bgcolor='#f8fafc',
+                    font=dict(family="Cairo", color="#172033"),
                     title_font_size=16,
-                    xaxis=dict(tickangle=-30, gridcolor='rgba(255,255,255,0.05)'),
-                    yaxis=dict(gridcolor='rgba(255,255,255,0.05)'),
-                    legend=dict(font=dict(color="white")),
+                    xaxis=dict(tickangle=-30, gridcolor='#e4e8ef'),
+                    yaxis=dict(gridcolor='#e4e8ef'),
+                    legend=dict(font=dict(color="#172033")),
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
