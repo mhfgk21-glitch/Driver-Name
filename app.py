@@ -10,6 +10,7 @@ from datetime import date, timedelta
 
 # ─── إعدادات الصفحة ───────────────────────────────────────────────────────────
 st.set_page_config(
+    page_title="نظام بيانات المندوبين",
     page_icon="📦",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -960,6 +961,7 @@ POSSIBLE_CODE_COLS   = ['code', 'كود', 'رقم الطلب', 'id', 'رقم ك�
 POSSIBLE_DATE_COLS   = ['created_at', 'التاريخ', 'تاريخ الطلب', 'date', 'تاريخ']
 
 # ─── دوال مساعدة ──────────────────────────────────────────────────────────────
+@st.cache_data
 def detect_columns(df: pd.DataFrame):
     col_driver = col_code = col_date = None
     for col in df.columns:
@@ -973,6 +975,7 @@ def detect_columns(df: pd.DataFrame):
     return col_driver, col_code, col_date
 
 
+@st.cache_data
 def filter_by_date(df, col_date, start_date, end_date):
     df = df.copy()
     df[col_date] = pd.to_datetime(df[col_date], errors='coerce')
@@ -981,6 +984,7 @@ def filter_by_date(df, col_date, start_date, end_date):
     return df[(df[col_date] >= start) & (df[col_date] <= end)]
 
 
+@st.cache_data
 def process_df(df, col_driver, col_code):
     """إرجاع dict: اسم المندوب → {codes, count}"""
     result = {}
@@ -1090,19 +1094,41 @@ with st.container():
         search_query = st.text_input("بحث", placeholder="اسم المندوب", label_visibility="collapsed", key="topbar_search")
 
     with topbar_cols[2]:
-        with st.popover("متوسطة (548 ms)", icon=":material/wifi:", use_container_width=True):
-            st.markdown("""
-            <div class="network-details">
-                <h4>معلومات الشبكة</h4>
-                <div class="network-row"><span>حالة الاتصال</span><span style="color:#b45309">متوسطة</span></div>
-                <div class="network-row"><span>زمن الاستجابة</span><span>548 ms</span></div>
-                <div class="network-row"><span>نوع الاتصال</span><span>غير محدد</span></div>
-                <div class="network-row"><span>نوع الشبكة</span><span>4G</span></div>
-                <div class="network-row"><span>سرعة التحميل</span><span>0.7 Mbps</span></div>
-            </div>
-            """, unsafe_allow_html=True)
-            if st.button("تحديث", key="refresh_network", icon=":material/refresh:", use_container_width=True):
-                st.rerun()
+        components.html("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@700&display=swap');
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; direction:rtl; }
+body { background:transparent; overflow:hidden; }
+#pill {
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    height:38px; padding:7px 10px;
+    border:1px solid #bfdbfe; border-radius:8px; background:#eff6ff;
+    color:#1d4ed8; font-size:0.72rem; font-weight:700;
+    white-space:nowrap; transition:all 0.3s ease;
+}
+#pill.medium { border-color:#fcd34d; background:#fffbeb; color:#b45309; }
+#pill.slow   { border-color:#fecdd3; background:#fff1f2; color:#be123c; }
+</style>
+<div id="pill">⏳ جارٍ القياس...</div>
+<script>
+(function(){
+    var pill = document.getElementById('pill');
+    var t0 = performance.now();
+    fetch(location.origin + '/?_nc=' + Date.now(), {method:'HEAD', cache:'no-store'})
+        .then(function(){
+            var ms = Math.round(performance.now() - t0);
+            var cls = ms < 200 ? '' : ms < 500 ? 'medium' : 'slow';
+            var lbl = ms < 200 ? '🟢 جيدة' : ms < 500 ? '🟡 متوسطة' : '🔴 بطيئة';
+            pill.className = cls;
+            pill.textContent = lbl + ' (' + ms + ' ms)';
+        })
+        .catch(function(){
+            pill.className = 'slow';
+            pill.textContent = '⚠ غير متصل';
+        });
+})();
+</script>
+""", height=44)
 
     with topbar_cols[3]:
         st.markdown("<div class='topbar-theme'>", unsafe_allow_html=True)
@@ -1166,52 +1192,10 @@ with st.container():
                     st.session_state[f"raw_{key}"]  = None
                 st.rerun()
 
-    if st.session_state.current_role == "admin" and st.session_state.show_user_management:
-        st.markdown("<div class='section-title'><i class='pi pi-users'></i><span>إدارة المستخدمين</span></div>", unsafe_allow_html=True)
-        with st.container(border=True):
-            user_rows = [
-                {"اسم المستخدم": username, "الدور": account["label"]}
-                for username, account in st.session_state.managed_users.items()
-            ]
-            st.dataframe(pd.DataFrame(user_rows), use_container_width=True, hide_index=True)
 
-            with st.form("add_employee_form", clear_on_submit=True):
-                add_cols = st.columns([1.2, 1.2, 1])
-                with add_cols[0]:
-                    new_username = st.text_input("اسم الموظف", placeholder="employee2")
-                with add_cols[1]:
-                    new_password = st.text_input("كلمة المرور", type="password")
-                with add_cols[2]:
-                    add_employee = st.form_submit_button("إضافة موظف", use_container_width=True)
-
-            if add_employee:
-                clean_username = new_username.strip()
-                if not clean_username or not new_password:
-                    st.warning("أدخل اسم الموظف وكلمة المرور")
-                elif clean_username in st.session_state.managed_users:
-                    st.error("اسم المستخدم موجود مسبقًا")
-                else:
-                    st.session_state.managed_users[clean_username] = {
-                        "password": new_password,
-                        "role": "employee",
-                        "label": "موظف",
-                    }
-                    st.success("تمت إضافة الموظف")
-                    st.rerun()
-
-            removable_users = [
-                username for username, account in st.session_state.managed_users.items()
-                if account["role"] == "employee"
-            ]
-            if removable_users:
-                delete_user = st.selectbox("حذف موظف", removable_users, key="delete_user_select")
-                if st.button("حذف المستخدم المحدد", key="delete_employee", type="secondary"):
-                    del st.session_state.managed_users[delete_user]
-                    st.success("تم حذف الموظف")
-                    st.rerun()
 
 # ─── رفع الملفات ──────────────────────────────────────────────────────────────
-st.markdown("<div class='section-title'><i class='pi pi-upload'></i><span>رفع ملفات إكسل</span></div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'><i class='pi pi-upload'></i><span>رفع الملفات (Excel / CSV)</span></div>", unsafe_allow_html=True)
 upload_cols = st.columns(4)
 status_labels = list(STATUS_CONFIG.keys())
 
@@ -1219,11 +1203,14 @@ for i, status in enumerate(status_labels):
     cfg = STATUS_CONFIG[status]
     with upload_cols[i]:
         st.markdown(f"<div class='upload-label' style='color:{cfg['color']};--status-soft:{cfg['soft_color']}'><i class='pi {cfg['prime_icon']}'></i><span>{status}</span></div>", unsafe_allow_html=True)
-        uploaded = st.file_uploader("اختر ملفًا بصيغة إكسل", type=["xlsx", "xls"], key=f"up_{status}", label_visibility="collapsed")
+        uploaded = st.file_uploader("اختر ملفًا", type=["xlsx", "xls", "csv"], key=f"up_{status}", label_visibility="collapsed")
 
         if uploaded:
             try:
-                df = pd.read_excel(uploaded)
+                if uploaded.name.lower().endswith(".csv"):
+                    df = pd.read_csv(uploaded)
+                else:
+                    df = pd.read_excel(uploaded)
                 if df.empty:
                     st.error("الملف فارغ!")
                 else:
