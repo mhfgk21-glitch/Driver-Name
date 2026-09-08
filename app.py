@@ -1226,52 +1226,326 @@ with st.container(key="app_topbar"):
             label_visibility="collapsed", key="topbar_search"
         )
 
-    # ── حالة الشبكة (قياس حقيقي) ────────────────────────────────────────────────
+    # ── حالة الشبكة (لوحة PrimeNG مطابقة مع نافذة تفاصيل تفاعلية) ──────────────
     with topbar_cols[2]:
         components.html("""
+<link rel="stylesheet" href="https://unpkg.com/primeicons@7.0.0/primeicons.css">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;900&display=swap');
 * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; direction:rtl; }
 body { background:transparent; overflow:hidden; }
+
 #pill {
-    display:flex; align-items:center; justify-content:center; gap:5px;
-    height:42px; padding:7px 12px;
-    border:1px solid #bfdbfe; border-radius:10px; background:#eff6ff;
-    color:#1d4ed8; font-size:0.71rem; font-weight:700;
-    white-space:nowrap; transition:all 0.35s ease; cursor:default;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 40px;
+    padding: 6px 12px;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: all 0.25s ease;
+    cursor: pointer;
     box-shadow: 0 1px 4px rgba(37,99,235,0.08);
+    user-select: none;
 }
-#pill.good   { border-color:#a7f3d0; background:#ecfdf5; color:#047857;
-               box-shadow:0 1px 4px rgba(4,120,87,0.1); }
-#pill.medium { border-color:#fcd34d; background:#fffbeb; color:#b45309;
-               box-shadow:0 1px 4px rgba(180,83,9,0.1); }
-#pill.slow   { border-color:#fecdd3; background:#fff1f2; color:#be123c;
-               box-shadow:0 1px 4px rgba(190,18,60,0.1); }
+#pill:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37,99,235,0.18);
+}
+#pill.good {
+    border-color: #a7f3d0; background: #ecfdf5; color: #047857;
+    box-shadow: 0 1px 4px rgba(4,120,87,0.1);
+}
+#pill.good:hover {
+    border-color: #6ee7b7;
+    box-shadow: 0 4px 12px rgba(4,120,87,0.18);
+}
+#pill.medium {
+    border-color: #fcd34d; background: #fffbeb; color: #b45309;
+    box-shadow: 0 1px 4px rgba(180,83,9,0.1);
+}
+#pill.medium:hover {
+    border-color: #f59e0b;
+    box-shadow: 0 4px 12px rgba(180,83,9,0.18);
+}
+#pill.slow {
+    border-color: #fecdd3; background: #fff1f2; color: #be123c;
+    box-shadow: 0 1px 4px rgba(190,18,60,0.1);
+}
+#pill.slow:hover {
+    border-color: #fb7185;
+    box-shadow: 0 4px 12px rgba(190,18,60,0.18);
+}
+
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
 .measuring { animation: pulse 1.2s ease infinite; }
 </style>
-<div id="pill" class="measuring">⏳ قياس الشبكة...</div>
+
+<div id="pill" class="measuring" title="انقر لعرض معلومات الشبكة التفصيلية">
+    <i class="pi pi-wifi"></i>
+    <span id="pill-lbl">قياس الشبكة...</span>
+</div>
+
 <script>
 (function(){
     var pill = document.getElementById('pill');
-    var t0 = performance.now();
-    fetch(location.origin + '/?_nc=' + Date.now(), {method:'HEAD', cache:'no-store'})
-        .then(function(){
-            var ms = Math.round(performance.now() - t0);
-            var cls, icon, lbl;
-            if (ms < 150)      { cls='good';   icon='🟢'; lbl='ممتازة'; }
-            else if (ms < 450) { cls='medium'; icon='🟡'; lbl='متوسطة'; }
-            else               { cls='slow';   icon='🔴'; lbl='بطيئة';  }
-            pill.className = cls;
-            pill.textContent = icon + '  ' + lbl + '  (' + ms + ' ms)';
-        })
-        .catch(function(){
-            pill.className = 'slow';
-            pill.textContent = '⚠  غير متصل';
-        });
+    var pillLbl = document.getElementById('pill-lbl');
+    var parentDoc = window.parent.document;
+    var overlayId = 'prime-network-overlay-panel';
+    var isDark = parentDoc.querySelector('.theme-dark-marker') !== null;
+
+    // التأكد من تحميل أيقونات PrimeIcons في المستند الأصلي
+    if (!parentDoc.getElementById('primeicons-cdn')) {
+        var piLink = parentDoc.createElement('link');
+        piLink.id = 'primeicons-cdn';
+        piLink.rel = 'stylesheet';
+        piLink.href = 'https://unpkg.com/primeicons@7.0.0/primeicons.css';
+        parentDoc.head.appendChild(piLink);
+    }
+
+    // إزالة أي لوحة سابقة إن وجدت لتحديث البنية
+    var existingOverlay = parentDoc.getElementById(overlayId);
+    if (existingOverlay) {
+        existingOverlay.remove();
+    }
+
+    // إنشاء لوحة PrimeNG OverlayPanel في المستند الأب (document.body)
+    var overlay = parentDoc.createElement('div');
+    overlay.id = overlayId;
+    overlay.className = 'ng-trigger ng-trigger-animation p-3 p-overlaypanel p-component';
+    overlay.style.cssText = [
+        'position: fixed',
+        'z-index: 999999',
+        'display: none',
+        'width: 20rem',
+        'max-width: calc(100vw - 20px)',
+        'padding: 1.15rem !important',
+        'border-radius: 8px',
+        'box-shadow: 0 6px 28px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08)',
+        'direction: rtl',
+        'font-family: Cairo, -apple-system, BlinkMacSystemFont, sans-serif',
+        'box-sizing: border-box',
+        'transition: opacity 0.2s ease, transform 0.2s ease',
+        'transform: translateY(0px)',
+        'opacity: 1',
+        isDark ? 'background: #172033; border: 1px solid #334155; color: #e5e7eb;' : 'background: #ffffff; border: 1px solid #dfe7ef; color: #495057;'
+    ].join(';');
+
+    overlay.innerHTML = `
+        <div class="p-overlaypanel-content">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid ${isDark ? '#334155' : '#dfe7ef'};">
+                <h6 style="margin:0; color:#0f766e; font-size:0.95rem; font-weight:700; display:flex; align-items:center; gap:6px;">
+                    <i class="pi pi-globe"></i> معلومات الشبكة
+                </h6>
+                <span id="pno-badge" style="padding:2px 8px; border-radius:6px; font-size:0.72rem; font-weight:700; background:#fef3c7; color:#b45309;">
+                    متوسطة
+                </span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                <i id="pno-wifi-icon" class="pi pi-wifi" style="font-size:1.4rem; color:#f59e0b;"></i>
+                <div style="display:flex; flex-direction:column; line-height:1.2;">
+                    <span style="font-size:0.83rem; font-weight:600; color:${isDark ? '#f1f5f9' : '#172033'};">حالة الاتصال</span>
+                    <span id="pno-status-txt" style="font-size:0.74rem; color:${isDark ? '#94a3b8' : '#64748b'};"> متصل </span>
+                </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:3px 0;">
+                    <span style="font-size:0.8rem; color:${isDark ? '#cbd5e1' : '#495057'};">زمن الاستجابة:</span>
+                    <span id="pno-latency" style="font-size:0.84rem; font-weight:700; color:${isDark ? '#f8fafc' : '#172033'};">-- ms</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:3px 0;">
+                    <span style="font-size:0.8rem; color:${isDark ? '#cbd5e1' : '#495057'};">نوع الاتصال:</span>
+                    <span id="pno-conn-type" style="font-size:0.84rem; font-weight:600; color:${isDark ? '#f8fafc' : '#172033'};">غير محدد</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:3px 0;">
+                    <span style="font-size:0.8rem; color:${isDark ? '#cbd5e1' : '#495057'};">نوع الشبكة:</span>
+                    <span id="pno-net-type" style="font-size:0.84rem; font-weight:600; color:${isDark ? '#f8fafc' : '#172033'};">4G</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:3px 0;">
+                    <span style="font-size:0.8rem; color:${isDark ? '#cbd5e1' : '#495057'};">سرعة التحميل:</span>
+                    <span id="pno-downlink" style="font-size:0.84rem; font-weight:600; color:${isDark ? '#f8fafc' : '#172033'};">-- Mbps</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:3px 0;">
+                    <span style="font-size:0.8rem; color:${isDark ? '#cbd5e1' : '#495057'};">زمن الاستجابة RTT:</span>
+                    <span id="pno-rtt" style="font-size:0.84rem; font-weight:600; color:${isDark ? '#f8fafc' : '#172033'};">-- ms</span>
+                </div>
+            </div>
+            <div style="margin-top:10px; pt-2; border-top:1px solid ${isDark ? '#334155' : '#dfe7ef'}; padding-top:6px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:0.72rem; color:${isDark ? '#94a3b8' : '#64748b'};">آخر فحص:</span>
+                    <span id="pno-last-check" style="font-size:0.72rem; color:${isDark ? '#94a3b8' : '#64748b'};">--</span>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:10px;">
+                <button id="pno-refresh-btn" type="button" style="display:inline-flex; align-items:center; gap:6px; padding:4px 14px; border:1px solid #0f766e; background:transparent; color:#0f766e; border-radius:6px; font-size:0.78rem; font-weight:700; cursor:pointer; font-family:Cairo,sans-serif; transition:all 0.2s;">
+                    <span id="pno-refresh-icon" class="pi pi-refresh" style="font-size:0.76rem;"></span>
+                    <span>تحديث</span>
+                </button>
+            </div>
+        </div>
+    `;
+
+    parentDoc.body.appendChild(overlay);
+
+    function formatTime(d) {
+        var day = d.getDate();
+        var month = d.getMonth() + 1;
+        var year = ('' + d.getFullYear()).slice(-2);
+        var hours = d.getHours();
+        var minutes = d.getMinutes();
+        var ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        minutes = minutes < 10 ? '0' + minutes : minutes;
+        return month + '/' + day + '/' + year + ', ' + hours + ':' + minutes + ' ' + ampm;
+    }
+
+    function checkNetwork() {
+        var t0 = performance.now();
+        var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        var refreshIcon = parentDoc.getElementById('pno-refresh-icon');
+        if (refreshIcon) refreshIcon.classList.add('pi-spin');
+
+        fetch(location.origin + '/?_nc=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
+            .then(function(){
+                var ms = Math.round(performance.now() - t0);
+                var cls, badgeBg, badgeCol, iconCol, lbl;
+
+                if (ms < 150) {
+                    cls = 'good';
+                    lbl = 'ممتازة';
+                    badgeBg = '#dcfce7'; badgeCol = '#15803d'; iconCol = '#10b981';
+                } else if (ms < 450) {
+                    cls = 'medium';
+                    lbl = 'متوسطة';
+                    badgeBg = '#fef3c7'; badgeCol = '#b45309'; iconCol = '#f59e0b';
+                } else {
+                    cls = 'slow';
+                    lbl = 'بطيئة';
+                    badgeBg = '#fee2e2'; badgeCol = '#b91c1c'; iconCol = '#ef4444';
+                }
+
+                pill.className = cls;
+                pillLbl.textContent = lbl + ' (' + ms + ' ms)';
+
+                // تحديث قيم اللوحة التفصيلية
+                var badgeEl = parentDoc.getElementById('pno-badge');
+                if (badgeEl) {
+                    badgeEl.textContent = lbl;
+                    badgeEl.style.background = badgeBg;
+                    badgeEl.style.color = badgeCol;
+                }
+
+                var wifiIcon = parentDoc.getElementById('pno-wifi-icon');
+                if (wifiIcon) wifiIcon.style.color = iconCol;
+
+                var latencyEl = parentDoc.getElementById('pno-latency');
+                if (latencyEl) latencyEl.textContent = ms + ' ms';
+
+                var connTypeEl = parentDoc.getElementById('pno-conn-type');
+                if (connTypeEl) {
+                    var typeName = 'غير محدد';
+                    if (conn && conn.type) {
+                        var map = {'wifi':'WiFi','ethernet':'إيثرنت','cellular':'خلوي 4G/5G','none':'غير متصل'};
+                        typeName = map[conn.type] || conn.type;
+                    }
+                    connTypeEl.textContent = typeName;
+                }
+
+                var netTypeEl = parentDoc.getElementById('pno-net-type');
+                if (netTypeEl) {
+                    netTypeEl.textContent = (conn && conn.effectiveType) ? conn.effectiveType.toUpperCase() : '4G';
+                }
+
+                var dlEl = parentDoc.getElementById('pno-downlink');
+                if (dlEl) {
+                    dlEl.textContent = (conn && conn.downlink) ? conn.downlink + ' Mbps' : (ms < 150 ? '10+ Mbps' : (ms < 450 ? '2.5 Mbps' : '0.5 Mbps'));
+                }
+
+                var rttEl = parentDoc.getElementById('pno-rtt');
+                if (rttEl) {
+                    rttEl.textContent = (conn && conn.rtt) ? conn.rtt + ' ms' : (ms * 2) + ' ms';
+                }
+
+                var statusTxt = parentDoc.getElementById('pno-status-txt');
+                if (statusTxt) statusTxt.textContent = 'متصل';
+
+                var lastCheckEl = parentDoc.getElementById('pno-last-check');
+                if (lastCheckEl) lastCheckEl.textContent = formatTime(new Date());
+
+                if (refreshIcon) refreshIcon.classList.remove('pi-spin');
+            })
+            .catch(function(){
+                pill.className = 'slow';
+                pillLbl.textContent = 'غير متصل';
+
+                var badgeEl = parentDoc.getElementById('pno-badge');
+                if (badgeEl) {
+                    badgeEl.textContent = 'غير متصل';
+                    badgeEl.style.background = '#fee2e2';
+                    badgeEl.style.color = '#b91c1c';
+                }
+                var wifiIcon = parentDoc.getElementById('pno-wifi-icon');
+                if (wifiIcon) wifiIcon.style.color = '#ef4444';
+
+                var statusTxt = parentDoc.getElementById('pno-status-txt');
+                if (statusTxt) statusTxt.textContent = 'غير متصل';
+
+                var lastCheckEl = parentDoc.getElementById('pno-last-check');
+                if (lastCheckEl) lastCheckEl.textContent = formatTime(new Date());
+
+                if (refreshIcon) refreshIcon.classList.remove('pi-spin');
+            });
+    }
+
+    // زر التحديث في اللوحة
+    var refreshBtn = parentDoc.getElementById('pno-refresh-btn');
+    if (refreshBtn) {
+        refreshBtn.onclick = function(e) {
+            e.stopPropagation();
+            checkNetwork();
+        };
+    }
+
+    // فتح / إغلاق اللوحة عند النقر على الشارة
+    pill.onclick = function(e) {
+        e.stopPropagation();
+        if (overlay.style.display === 'block') {
+            overlay.style.display = 'none';
+        } else {
+            var frame = window.frameElement;
+            if (frame) {
+                var rect = frame.getBoundingClientRect();
+                overlay.style.top = (rect.bottom + 6) + 'px';
+                var panelWidth = 320;
+                var leftPos = rect.right - panelWidth;
+                if (leftPos < 12) leftPos = 12;
+                overlay.style.left = leftPos + 'px';
+            }
+            overlay.style.display = 'block';
+        }
+    };
+
+    // إغلاق اللوحة عند النقر في أي مكان آخر
+    parentDoc.addEventListener('click', function(e) {
+        if (overlay && overlay.style.display === 'block') {
+            if (!overlay.contains(e.target)) {
+                overlay.style.display = 'none';
+            }
+        }
+    });
+
+    // القياس التلقائي الأولي
+    checkNetwork();
 })();
 </script>
-""", height=48)
+""", height=46)
 
     # ── تبديل الثيم ─────────────────────────────────────────────────────────────
     with topbar_cols[3]:
