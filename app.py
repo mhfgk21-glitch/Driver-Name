@@ -193,6 +193,19 @@ st.markdown("""
     text-align: center;
 }
 
+.brand-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #cce5e2;
+    color: var(--brand-dark);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
 [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
     color: var(--ink);
     font-weight: 600;
@@ -631,11 +644,14 @@ with st.container():
     st.markdown("""
     <div class="sidebar-brand">
         <div class="brand-icon"><i class="pi pi-bars"></i></div>
-        <div><strong>لوحة التحكم</strong><small>إدارة ملفات المندوبين</small></div>
+        <div>
+            <strong>لوحة التحكم</strong>
+            <small>إدارة ملفات المندوبين</small>
+            <div class="brand-section"><i class="pi pi-sliders-h"></i><span>إعدادات المعالجة</span></div>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
     control_cols = st.columns([1.35, 1.25, 2.4, 1.15])
 
     with control_cols[0]:
