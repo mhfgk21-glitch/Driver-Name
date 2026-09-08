@@ -53,6 +53,7 @@ st.markdown("""
 }
 
 .stat-card {
+    box-sizing: border-box;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 10px;
@@ -60,7 +61,7 @@ st.markdown("""
     text-align: center;
     box-shadow: var(--shadow);
     transition: transform 0.2s ease;
-    min-height: 112px;
+    height: 112px;
 }
 
 .stat-card:hover {
@@ -161,6 +162,8 @@ st.markdown("""
     background: #f0fdfa;
     border: 1px solid #ccfbf1;
     border-radius: 10px;
+    max-width: 420px;
+    margin-inline: auto;
 }
 
 .sidebar-brand .brand-icon {
@@ -294,7 +297,7 @@ st.markdown("""
     flex-direction: column;
     justify-content: center;
     gap: 8px;
-    min-height: 112px;
+    height: 112px;
     padding: 10px 12px;
     background: linear-gradient(180deg, #ffffff 0%, #f8fffe 100%);
     border: 1px dashed #9ac9c4;
@@ -462,6 +465,8 @@ hr { border-color: var(--line) !important; }
     background: var(--status-soft, #f8fafc);
     font-weight: 700;
     margin-bottom: 6px;
+    min-height: 42px;
+    box-sizing: border-box;
 }
 
 .control-label {
@@ -491,9 +496,11 @@ hr { border-color: var(--line) !important; }
 }
 
 @media (max-width: 768px) {
-    .stat-card { min-height: 96px; padding: 14px 10px; }
+    .stat-card { height: 96px; padding: 14px 10px; }
     .stat-value { font-size: 1.6rem; }
     .stTabs [data-baseweb="tab"] { padding: 8px 10px; font-size: 0.82rem; }
+    .upload-label { min-height: 38px; font-size: 0.82rem; }
+    [data-testid="stFileUploader"] section { height: 104px; padding: 8px; }
 }
 </style>
 """, unsafe_allow_html=True)
