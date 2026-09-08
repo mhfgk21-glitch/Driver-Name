@@ -287,14 +287,82 @@ st.markdown("""
 }
 
 [data-testid="stFileUploader"] section {
-    background: var(--surface-soft);
-    border: 1px dashed #b7c4d4;
-    border-radius: 9px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    min-height: 146px;
+    padding: 16px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fffe 100%);
+    border: 1px dashed #9ac9c4;
+    border-radius: 12px;
+    box-shadow: 0 5px 16px rgba(23, 32, 51, 0.05);
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 [data-testid="stFileUploader"] section:hover {
-    border-color: var(--brand);
+    border-color: var(--p-primary-color);
     background: #f0fdfa;
+    box-shadow: 0 8px 20px rgba(15, 118, 110, 0.1);
+}
+
+[data-testid="stFileUploader"] section:focus-within {
+    border-color: var(--p-primary-color);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+}
+
+[data-testid="stFileUploader"] section > span {
+    display: flex;
+    justify-content: center;
+}
+
+[data-testid="stFileUploader"] section button {
+    min-height: 38px;
+    padding: 8px 18px;
+    border: 1px solid var(--p-primary-color);
+    border-radius: var(--p-border-radius-md);
+    background: var(--p-primary-color);
+    color: var(--p-primary-contrast-color);
+    font-family: var(--font-sans);
+    font-weight: 700;
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+[data-testid="stFileUploader"] section button:hover {
+    border-color: var(--p-primary-hover-color);
+    background: var(--p-primary-hover-color);
+    color: var(--p-primary-contrast-color);
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(15, 118, 110, 0.2);
+}
+
+[data-testid="stFileUploader"] section button p {
+    display: none;
+}
+
+[data-testid="stFileUploader"] section button::after {
+    content: "اختيار ملف";
+    font-family: var(--font-sans);
+    font-size: 0.84rem;
+}
+
+[data-testid="stFileUploaderDropzoneInstructions"] {
+    color: var(--muted);
+    text-align: center;
+    font-size: 0.75rem;
+}
+
+[data-testid="stFileUploaderDropzoneInstructions"]::before {
+    content: "اسحب الملف هنا أو اختره من جهازك";
+    display: block;
+    margin-bottom: 3px;
+    color: var(--ink);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+[data-testid="stFileUploaderDropzoneInstructions"] > div {
+    display: none;
 }
 
 .stDataFrame {
