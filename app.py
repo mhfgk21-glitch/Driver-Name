@@ -117,6 +117,27 @@ st.markdown("""
     padding-top: 1rem;
 }
 
+[data-testid="stSidebarCollapseButton"] button,
+[data-testid="collapsedControl"] button {
+    width: 38px;
+    height: 38px;
+    margin: 8px;
+    border: 1px solid #cce5e2;
+    border-radius: 8px;
+    background: #f0fdfa;
+    color: var(--brand);
+    box-shadow: 0 4px 12px rgba(15, 118, 110, 0.1);
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+[data-testid="stSidebarCollapseButton"] button:hover,
+[data-testid="collapsedControl"] button:hover {
+    background: var(--brand);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(15, 118, 110, 0.2);
+}
+
 [data-testid="stSidebar"] .block-container {
     padding: 1.25rem 1.1rem 1.5rem;
 }
