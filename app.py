@@ -154,6 +154,7 @@ st.markdown("""
 .sidebar-brand {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 11px;
     padding: 13px 14px;
     margin-bottom: 20px;
@@ -178,6 +179,7 @@ st.markdown("""
     color: var(--ink);
     font-size: 0.94rem;
     line-height: 1.35;
+    text-align: center;
 }
 
 .sidebar-brand small {
@@ -185,6 +187,7 @@ st.markdown("""
     color: var(--muted);
     font-size: 0.72rem;
     margin-top: 2px;
+    text-align: center;
 }
 
 [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
