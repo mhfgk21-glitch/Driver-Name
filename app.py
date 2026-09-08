@@ -14,6 +14,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
+
 # ─── CSS مخصص ─────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -526,8 +529,60 @@ hr { border-color: var(--line) !important; }
     .upload-label { min-height: 38px; font-size: 0.82rem; }
     [data-testid="stFileUploader"] section { height: 104px; padding: 8px; }
 }
+
+/* Dark mode is activated by the marker rendered below the theme styles. */
+.stApp:has(.theme-dark-marker) {
+    --ink: #e5e7eb;
+    --muted: #a7b0bf;
+    --line: #334155;
+    --surface: #172033;
+    --surface-soft: #1e293b;
+    --brand-soft: #134e4a;
+    background: #0f172a;
+}
+
+.stApp:has(.theme-dark-marker) [data-testid="stSidebar"],
+.stApp:has(.theme-dark-marker) .stat-card,
+.stApp:has(.theme-dark-marker) .status-card,
+.stApp:has(.theme-dark-marker) .result-box,
+.stApp:has(.theme-dark-marker) [data-testid="metric-container"],
+.stApp:has(.theme-dark-marker) .stTabs [data-baseweb="tab-list"] {
+    background: #172033;
+    border-color: #334155;
+    color: #e5e7eb;
+}
+
+.stApp:has(.theme-dark-marker) .sidebar-brand,
+.stApp:has(.theme-dark-marker) [data-testid="stFileUploader"] section {
+    background: #1e293b;
+    border-color: #3b6470;
+}
+
+.stApp:has(.theme-dark-marker) .stTextInput > div > div > input,
+.stApp:has(.theme-dark-marker) .stButton > button,
+.stApp:has(.theme-dark-marker) [data-testid="stFileUploader"] section button {
+    background: #1e293b !important;
+    border-color: #475569 !important;
+    color: #e5e7eb !important;
+}
+
+.stApp:has(.theme-dark-marker) .stTabs [aria-selected="true"] {
+    background: #0f766e !important;
+    color: white !important;
+}
+
+.stApp:has(.theme-dark-marker) .app-footer,
+.stApp:has(.theme-dark-marker) .sidebar-divider,
+.stApp:has(.theme-dark-marker) hr {
+    border-color: #334155 !important;
+}
 </style>
 """, unsafe_allow_html=True)
+
+st.markdown(
+    '<span class="theme-dark-marker"></span>' if st.session_state.dark_mode else '<span class="theme-light-marker"></span>',
+    unsafe_allow_html=True,
+)
 
 # ─── الثوابت ──────────────────────────────────────────────────────────────────
 STATUS_CONFIG = {
@@ -676,7 +731,7 @@ with st.container():
     st.markdown("<div class='section-title'><i class='pi pi-sliders-h'></i><span>إعدادات المعالجة</span></div>", unsafe_allow_html=True)
 
     with st.container(border=True):
-        control_cols = st.columns([1.35, 1.25, 2.4, 1.15])
+        control_cols = st.columns([1.35, 1.25, 2.4, 1.15, 1.05])
 
         with control_cols[0]:
             use_date_filter = st.toggle("تفعيل فلترة التاريخ", value=False)
@@ -702,6 +757,13 @@ with st.container():
                 for key in STATUS_CONFIG:
                     st.session_state[f"data_{key}"] = None
                     st.session_state[f"raw_{key}"]  = None
+                st.rerun()
+
+        with control_cols[4]:
+            st.markdown("<div class='control-label'>&nbsp;</div>", unsafe_allow_html=True)
+            theme_label = "الوضع النهاري" if st.session_state.dark_mode else "الوضع الليلي"
+            if st.button(theme_label, use_container_width=True, type="secondary"):
+                st.session_state.dark_mode = not st.session_state.dark_mode
                 st.rerun()
 
 # ─── رفع الملفات ──────────────────────────────────────────────────────────────
