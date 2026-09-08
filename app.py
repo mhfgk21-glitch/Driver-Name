@@ -519,6 +519,15 @@ hr { border-color: var(--line) !important; }
     font-size: 1rem;
 }
 
+.st-key-theme_toggle button {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
 .app-footer {
     margin-top: 28px;
     padding: 14px 0 6px;
@@ -748,10 +757,9 @@ with st.container():
 
     theme_cols = st.columns([3, 2, 3])
     with theme_cols[1]:
-        theme_icon = "pi-sun" if st.session_state.dark_mode else "pi-moon"
-        theme_label = "نهاري" if st.session_state.dark_mode else "ليلي"
-        st.markdown(f"<div class='theme-toolbar'><i class='pi {theme_icon}'></i><span>المظهر</span></div>", unsafe_allow_html=True)
-        if st.button(theme_label, use_container_width=True, type="secondary"):
+        theme_label = "☀" if st.session_state.dark_mode else "☾"
+        theme_name = "تفعيل الوضع النهاري" if st.session_state.dark_mode else "تفعيل الوضع الليلي"
+        if st.button(theme_label, key="theme_toggle", help=theme_name, type="secondary"):
             st.session_state.dark_mode = not st.session_state.dark_mode
             st.rerun()
 
