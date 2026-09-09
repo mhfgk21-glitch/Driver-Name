@@ -1498,22 +1498,59 @@ body { background:transparent; overflow:hidden; }
         return month + '/' + day + '/' + year + ', ' + hours + ':' + minutes + ' ' + ampm;
     }
 
+    function pingTarget(url) {
+        return new Promise(function(resolve, reject) {
+            var t0 = performance.now();
+            var timer = setTimeout(function() {
+                reject(new Error('timeout'));
+            }, 4000);
+
+            fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' })
+                .then(function() {
+                    clearTimeout(timer);
+                    var duration = Math.round(performance.now() - t0);
+                    resolve(duration);
+                })
+                .catch(function(err) {
+                    clearTimeout(timer);
+                    reject(err);
+                });
+        });
+    }
+
+    function getRealPing() {
+        var cacheBust = '?_t=' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+        // اختبار النقطة السحابية الحقيقية الأقرب (Google 204 Edge)
+        return pingTarget('https://www.gstatic.com/generate_204' + cacheBust)
+            .catch(function() {
+                // بديل سحابي حقيقي عالمي (Cloudflare Edge)
+                return pingTarget('https://cloudflare.com/cdn-cgi/trace' + cacheBust);
+            })
+            .catch(function() {
+                // بديل قياس RTT الحقيقي الخاص بالمتصفح
+                var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                if (conn && conn.rtt && conn.rtt > 0) {
+                    return Promise.resolve(conn.rtt);
+                }
+                // في حالة انقطاع الاتصال الخارجي بالكامل
+                return pingTarget(location.origin + '/?_nc=' + Date.now());
+            });
+    }
+
     function checkNetwork() {
-        var t0 = performance.now();
         var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
         var refreshIcon = parentDoc.getElementById('pno-refresh-icon');
         if (refreshIcon) refreshIcon.classList.add('pi-spin');
 
-        fetch(location.origin + '/?_nc=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
-            .then(function(){
-                var ms = Math.round(performance.now() - t0);
+        getRealPing()
+            .then(function(ms) {
                 var cls, badgeBg, badgeCol, iconCol, lbl;
 
-                if (ms < 150) {
+                if (ms < 100) {
                     cls = 'good';
                     lbl = 'ممتازة';
                     badgeBg = '#dcfce7'; badgeCol = '#15803d'; iconCol = '#10b981';
-                } else if (ms < 450) {
+                } else if (ms < 280) {
                     cls = 'medium';
                     lbl = 'متوسطة';
                     badgeBg = '#fef3c7'; badgeCol = '#b45309'; iconCol = '#f59e0b';
@@ -1546,23 +1583,25 @@ body { background:transparent; overflow:hidden; }
                     if (conn && conn.type) {
                         var map = {'wifi':'WiFi','ethernet':'إيثرنت','cellular':'خلوي 4G/5G','none':'غير متصل'};
                         typeName = map[conn.type] || conn.type;
+                    } else {
+                        typeName = 'WiFi / اتصال محلي';
                     }
                     connTypeEl.textContent = typeName;
                 }
 
                 var netTypeEl = parentDoc.getElementById('pno-net-type');
                 if (netTypeEl) {
-                    netTypeEl.textContent = (conn && conn.effectiveType) ? conn.effectiveType.toUpperCase() : '4G';
+                    netTypeEl.textContent = (conn && conn.effectiveType) ? conn.effectiveType.toUpperCase() : (ms < 100 ? '4G / 5G' : (ms < 280 ? '3G' : '2G'));
                 }
 
                 var dlEl = parentDoc.getElementById('pno-downlink');
                 if (dlEl) {
-                    dlEl.textContent = (conn && conn.downlink) ? conn.downlink + ' Mbps' : (ms < 150 ? '10+ Mbps' : (ms < 450 ? '2.5 Mbps' : '0.5 Mbps'));
+                    dlEl.textContent = (conn && conn.downlink) ? conn.downlink + ' Mbps' : (ms < 100 ? '15+ Mbps' : (ms < 280 ? '2.5 Mbps' : '0.5 Mbps'));
                 }
 
                 var rttEl = parentDoc.getElementById('pno-rtt');
                 if (rttEl) {
-                    rttEl.textContent = (conn && conn.rtt) ? conn.rtt + ' ms' : (ms * 2) + ' ms';
+                    rttEl.textContent = (conn && conn.rtt) ? conn.rtt + ' ms' : (ms * 1.5).toFixed(0) + ' ms';
                 }
 
                 var statusTxt = parentDoc.getElementById('pno-status-txt');
