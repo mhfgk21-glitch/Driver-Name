@@ -625,20 +625,20 @@ hr { border-color: var(--line) !important; }
     min-height: 38px !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
-    border-radius: 8px !important;
-    border-color: #fecdd3 !important;
-    background: #fff1f2 !important;
-    color: #be123c !important;
+    border-radius: 2rem !important;
+    border-color: #ffd0ce !important;
+    background: #fff5f5 !important;
+    color: #b32b23 !important;
     white-space: nowrap !important;
-    padding: 4px 12px !important;
-    transition: all 0.2s ease !important;
+    padding: 0.5rem 1.15rem !important;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s !important;
 }
 
 .st-key-opt_clear_all > button:hover:not(:disabled) {
-    border-color: #fda4af !important;
+    border-color: #ff3d32 !important;
     background: #ffe4e6 !important;
     color: #9f1239 !important;
-    box-shadow: 0 3px 10px rgba(190,18,60,0.15) !important;
+    box-shadow: 0 0 0 0.18rem rgba(255, 61, 50, 0.2) !important;
     transform: translateY(-1px) !important;
 }
 
@@ -671,53 +671,62 @@ hr { border-color: var(--line) !important; }
     height: 36px !important;
     min-height: 36px !important;
     font-size: 0.8rem !important;
-    border-radius: 8px !important;
+    border-radius: 2rem !important;
+    padding: 0.4rem 1rem !important;
 }
 
 /* Logo */
 .topbar-logo {
     display: grid;
     place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+    width: 38px;
+    height: 38px;
+    border-radius: 2rem;
+    background: linear-gradient(135deg, #532BFD 0%, #3B58FF 100%);
     color: white;
     font-size: 0.88rem;
     font-weight: 900;
     letter-spacing: 0.04em;
-    box-shadow: 0 4px 14px rgba(15,118,110,0.32);
+    box-shadow: 0 3px 10px rgba(83, 43, 253, 0.25);
     margin: auto;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .topbar-logo:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(15,118,110,0.4);
+    box-shadow: 0 6px 18px rgba(83, 43, 253, 0.35);
 }
 
 /* Notification bell */
 .topbar-bell {
     display: grid;
     place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    border-radius: 2rem;
     background: var(--surface-soft);
     border: 1px solid var(--line);
-    font-size: 1rem;
     cursor: default;
     transition: all 0.2s ease;
     margin: auto;
     user-select: none;
 }
 
+.topbar-bell i {
+    font-size: 1.05rem;
+    color: var(--muted);
+    transition: color 0.2s;
+}
+
 .topbar-bell:hover {
-    background: #fffbeb;
-    border-color: #fcd34d;
-    color: #b45309;
+    background: #fefbf3;
+    border-color: #faedc4;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(180,83,9,0.1);
+    box-shadow: 0 0 0 0.18rem rgba(234, 179, 8, 0.2);
+}
+
+.topbar-bell:hover i {
+    color: #a47d06;
 }
 
 /* User card */
@@ -725,32 +734,33 @@ hr { border-color: var(--line) !important; }
     display: flex;
     align-items: center;
     gap: 9px;
-    padding: 5px 10px;
+    padding: 4px 12px;
     border: 1px solid var(--line);
-    border-radius: 10px;
+    border-radius: 2rem;
     background: var(--surface-soft);
     white-space: nowrap;
-    min-height: 44px;
-    transition: border-color 0.2s, background 0.2s;
+    min-height: 38px;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
     cursor: default;
 }
 
 .topbar-account:hover {
-    border-color: #8dc5bf;
-    background: var(--brand-soft);
+    border-color: #dadafc;
+    background: #f7f7fe;
+    box-shadow: 0 0 0 0.15rem rgba(83, 43, 253, 0.12);
 }
 
 .topbar-avatar {
     display: grid;
     place-items: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 7px;
-    background: linear-gradient(135deg, #0f766e, #115e59);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #532BFD, #3B58FF);
     color: white;
     font-weight: 900;
-    font-size: 0.82rem;
-    box-shadow: 0 2px 6px rgba(15,118,110,0.22);
+    font-size: 0.8rem;
+    box-shadow: 0 2px 6px rgba(83, 43, 253, 0.25);
     flex-shrink: 0;
 }
 
@@ -860,59 +870,114 @@ hr { border-color: var(--line) !important; }
 
 /* Icon-only topbar buttons */
 .st-key-theme_toggle > button {
-    width: 40px !important;
-    height: 40px !important;
+    width: 38px !important;
+    height: 38px !important;
     padding: 0 !important;
-    border-radius: 10px !important;
-    font-size: 1.1rem !important;
+    border-radius: 2rem !important;
+    font-size: 1.05rem !important;
     line-height: 1 !important;
     border-color: var(--line) !important;
     background: var(--surface-soft) !important;
+    color: var(--brand) !important;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s !important;
 }
 
 .st-key-theme_toggle > button:hover {
-    background: var(--brand-soft) !important;
-    border-color: #8dc5bf !important;
-    color: var(--brand) !important;
+    background: #f7f7fe !important;
+    border-color: #532BFD !important;
+    color: #532BFD !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 4px 14px rgba(15,118,110,0.14) !important;
+    box-shadow: 0 0 0 0.18rem rgba(83, 43, 253, 0.16) !important;
 }
 
 .st-key-user_management_toggle > button {
-    width: 40px !important;
-    height: 40px !important;
+    width: 38px !important;
+    height: 38px !important;
     padding: 0 !important;
-    border-radius: 10px !important;
+    border-radius: 2rem !important;
     border-color: var(--line) !important;
     background: var(--surface-soft) !important;
-    color: var(--brand) !important;
+    color: #532BFD !important;
+    font-size: 1.05rem !important;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s !important;
 }
 
 .st-key-user_management_toggle > button:hover {
-    background: var(--brand-soft) !important;
-    border-color: #8dc5bf !important;
+    background: #f7f7fe !important;
+    border-color: #532BFD !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 4px 14px rgba(15,118,110,0.14) !important;
+    box-shadow: 0 0 0 0.18rem rgba(83, 43, 253, 0.16) !important;
 }
 
 .st-key-topbar_logout > button {
-    min-height: 40px;
-    padding: 7px 14px !important;
-    border-color: #fecdd3 !important;
-    border-radius: 10px !important;
-    background: #fff1f2 !important;
-    color: #be123c !important;
-    font-size: 0.76rem !important;
+    min-height: 38px;
+    height: 38px;
+    padding: 0.5rem 1.15rem !important;
+    border-color: #ffd0ce !important;
+    border-radius: 2rem !important;
+    background: #fff5f5 !important;
+    color: #b32b23 !important;
+    font-size: 0.78rem !important;
     font-weight: 700 !important;
     white-space: nowrap;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.st-key-topbar_logout > button::before {
+    content: "\e978"; /* pi-sign-out */
+    font-family: 'primeicons' !important;
+    font-size: 0.85rem;
 }
 
 .st-key-topbar_logout > button:hover {
-    border-color: #fda4af !important;
+    border-color: #ff3d32 !important;
     background: #ffe4e6 !important;
     color: #9f1239 !important;
-    box-shadow: 0 4px 14px rgba(190,18,60,0.12) !important;
+    box-shadow: 0 0 0 0.18rem rgba(255, 61, 50, 0.2) !important;
     transform: translateY(-1px) !important;
+}
+
+.st-key-opt_clear_all > button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+}
+
+.st-key-opt_clear_all > button::before {
+    content: "\e994"; /* pi-trash */
+    font-family: 'primeicons' !important;
+    font-size: 0.85rem;
+}
+
+.st-key-back_home > button::before {
+    content: "\e908"; /* pi-arrow-right */
+    font-family: 'primeicons' !important;
+    font-size: 0.85rem;
+}
+
+.stDownloadButton > button::before {
+    content: "\e91e"; /* pi-download */
+    font-family: 'primeicons' !important;
+    font-size: 0.85rem;
+}
+
+/* Global button styling to match Prime rounded buttons */
+.stButton > button, .stDownloadButton > button {
+    border-radius: 2rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.stButton > button:focus, .stDownloadButton > button:focus {
+    box-shadow: 0 0 0 0.18rem rgba(83, 43, 253, 0.2) !important;
 }
 
 .app-footer {
@@ -1594,7 +1659,7 @@ body { background:transparent; overflow:hidden; }
 
     # ── الإشعارات ───────────────────────────────────────────────────────────────
     with topbar_cols[4]:
-        st.markdown("<div class='topbar-bell' title='لا توجد إشعارات جديدة'>🔔</div>", unsafe_allow_html=True)
+        st.markdown("<div class='topbar-bell' title='لا توجد إشعارات جديدة'><i class='pi pi-bell'></i></div>", unsafe_allow_html=True)
 
     # ── بطاقة المستخدم ──────────────────────────────────────────────────────────
     with topbar_cols[5]:
@@ -1639,13 +1704,13 @@ body { background:transparent; overflow:hidden; }
     if st.session_state.get("opt_date_filter", False):
         opt_cols = st.columns([1.3, 1.1, 1.1, 1.4, 1.1])
         with opt_cols[0]:
-            use_date_filter = st.toggle("📅 فلترة التاريخ", key="opt_date_filter")
+            use_date_filter = st.toggle("فلترة التاريخ", key="opt_date_filter")
         with opt_cols[1]:
             start_date = st.date_input("من", value=date.today() - timedelta(days=30), key="opt_date_from")
         with opt_cols[2]:
             end_date = st.date_input("إلى", value=date.today(), key="opt_date_to")
         with opt_cols[3]:
-            merge_mode = st.toggle("🔀 دمج كل الحالات معاً", key="opt_merge_mode")
+            merge_mode = st.toggle("دمج كل الحالات معاً", key="opt_merge_mode")
         with opt_cols[4]:
             if st.button("مسح البيانات", key="opt_clear_all",
                          help="مسح جميع الجداول والبيانات المرفوعة (للمدير فقط)", type="secondary",
@@ -1657,12 +1722,12 @@ body { background:transparent; overflow:hidden; }
     else:
         opt_cols = st.columns([1.3, 1.6, 2.9, 1.2])
         with opt_cols[0]:
-            use_date_filter = st.toggle("📅 فلترة التاريخ", value=False, key="opt_date_filter")
+            use_date_filter = st.toggle("فلترة التاريخ", value=False, key="opt_date_filter")
             start_date = end_date = None
         with opt_cols[1]:
-            merge_mode = st.toggle("🔀 دمج كل الحالات معاً", value=False, key="opt_merge_mode")
+            merge_mode = st.toggle("دمج كل الحالات معاً", value=False, key="opt_merge_mode")
         with opt_cols[2]:
-            st.markdown("<div class='topbar-opt-hint'>💡 خيارات المعالجة: فلترة التواريخ ودمج الحالات المرفوعة تلقائياً</div>", unsafe_allow_html=True)
+            st.markdown("<div class='topbar-opt-hint'><i class='pi pi-info-circle'></i> <span>خيارات المعالجة: فلترة التواريخ ودمج الحالات المرفوعة تلقائياً</span></div>", unsafe_allow_html=True)
         with opt_cols[3]:
             if st.button("مسح البيانات", key="opt_clear_all",
                          help="مسح جميع الجداول والبيانات المرفوعة (للمدير فقط)", type="secondary",
@@ -1932,7 +1997,7 @@ if has_data:
 
     # ── Tab 4: تصدير البيانات ────────────────────────────────────────────────
     with tab_export:
-        st.markdown("#### 💾 خيارات التصدير")
+        st.markdown("<div class='section-title'><i class='pi pi-file-export'></i><span>خيارات التصدير</span></div>", unsafe_allow_html=True)
         exp_cols = st.columns(3)
 
         with exp_cols[0]:
