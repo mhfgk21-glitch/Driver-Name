@@ -19,6 +19,7 @@ class DriverApp(ctk.CTk):
 
         self.title("معالج طلبات المندوبين Pro - الإحصائيات والذكاء")
         self.geometry("900x900")
+        self.minsize(360, 620)
 
         # تعيين الأيقونة
         try:
@@ -36,6 +37,7 @@ class DriverApp(ctk.CTk):
         # الواجهة الرئيسية
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(4, weight=1)
+        self._compact_layout = None
 
         # 1. العنوان
         self.label_title = ctk.CTkLabel(self, text="📊 نظام معالجة بيانات المندوبين المتطور", font=self.font_header)
@@ -59,13 +61,15 @@ class DriverApp(ctk.CTk):
         self.date_toggle = ctk.CTkSwitch(self.settings_frame, text="فلترة التاريخ", variable=self.date_filter_var, font=self.font_stats)
         self.date_toggle.grid(row=0, column=0, padx=10, pady=10)
 
-        ctk.CTkLabel(self.settings_frame, text="من:", font=self.font_stats).grid(row=0, column=1, padx=5)
+        self.start_date_label = ctk.CTkLabel(self.settings_frame, text="من:", font=self.font_stats)
+        self.start_date_label.grid(row=0, column=1, padx=5)
         # استخدام DateEntry لتحديد التاريخ بصرياً
         self.start_date_picker = DateEntry(self.settings_frame, width=12, background='darkblue',
                                          foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
         self.start_date_picker.grid(row=0, column=2, padx=5, pady=10, sticky="ew")
 
-        ctk.CTkLabel(self.settings_frame, text="إلى:", font=self.font_stats).grid(row=0, column=3, padx=5)
+        self.end_date_label = ctk.CTkLabel(self.settings_frame, text="إلى:", font=self.font_stats)
+        self.end_date_label.grid(row=0, column=3, padx=5)
         self.end_date_picker = DateEntry(self.settings_frame, width=12, background='darkblue',
                                        foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
         self.end_date_picker.grid(row=0, column=4, padx=5, pady=10, sticky="ew")
@@ -113,6 +117,85 @@ class DriverApp(ctk.CTk):
         # مخزن البيانات لكل حالة
         self.raw_dfs = {"قيد التوصيل": None, "المؤجل": None, "الراجع": None, "تم التسليم": None}
         self.status_cols = {"قيد التوصيل": (None, None), "المؤجل": (None, None), "الراجع": (None, None), "تم التسليم": (None, None)}
+
+        self.bind("<Configure>", self._update_responsive_layout)
+        self.after_idle(self._update_responsive_layout)
+
+    def _update_responsive_layout(self, event=None):
+        """Reflow controls so the window remains usable at narrow widths."""
+        compact = self.winfo_width() < 760
+        if compact == self._compact_layout:
+            return
+        self._compact_layout = compact
+
+        for column in range(6):
+            self.settings_frame.grid_columnconfigure(column, weight=0)
+        for column in range(4):
+            self.top_controls.grid_columnconfigure(column, weight=0)
+        for column in range(3):
+            self.stats_frame.grid_columnconfigure(column, weight=0)
+
+        for widget in (
+            self.date_toggle,
+            self.start_date_label,
+            self.start_date_picker,
+            self.end_date_label,
+            self.end_date_picker,
+            self.merge_toggle,
+        ):
+            widget.grid_forget()
+
+        buttons = (self.btn_delivery, self.btn_deferred, self.btn_returned, self.btn_delivered)
+        for button in buttons:
+            button.grid_forget()
+
+        stat_widgets = (self.stat_drivers, self.stat_codes, self.stat_top_driver)
+        for widget in stat_widgets:
+            widget.master.grid_forget()
+
+        if compact:
+            for column in range(2):
+                self.settings_frame.grid_columnconfigure(column, weight=1)
+                self.top_controls.grid_columnconfigure(column, weight=1)
+            self.stats_frame.grid_columnconfigure(0, weight=1)
+
+            self.date_toggle.grid(row=0, column=0, columnspan=2, padx=10, pady=8, sticky="w")
+            self.start_date_label.grid(row=1, column=0, padx=5, pady=5, sticky="e")
+            self.start_date_picker.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+            self.end_date_label.grid(row=2, column=0, padx=5, pady=5, sticky="e")
+            self.end_date_picker.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
+            self.merge_toggle.grid(row=3, column=0, columnspan=2, padx=10, pady=8, sticky="w")
+
+            for index, button in enumerate(buttons):
+                button.grid(row=index // 2, column=index % 2, padx=5, pady=6, sticky="ew")
+            for index, widget in enumerate(stat_widgets):
+                widget.master.grid(row=index, column=0, padx=10, pady=5, sticky="ew")
+            self.bottom_buttons.grid_columnconfigure(0, weight=1)
+            self.bottom_buttons.grid_columnconfigure(1, weight=0)
+            self.btn_copy.grid_configure(row=0, column=0, sticky="ew")
+            self.btn_clear.grid_configure(row=1, column=0, sticky="ew")
+        else:
+            for column in range(6):
+                self.settings_frame.grid_columnconfigure(column, weight=1)
+            for column in range(4):
+                self.top_controls.grid_columnconfigure(column, weight=1)
+            for column in range(3):
+                self.stats_frame.grid_columnconfigure(column, weight=1)
+
+            self.date_toggle.grid(row=0, column=0, padx=10, pady=10)
+            self.start_date_label.grid(row=0, column=1, padx=5)
+            self.start_date_picker.grid(row=0, column=2, padx=5, pady=10, sticky="ew")
+            self.end_date_label.grid(row=0, column=3, padx=5)
+            self.end_date_picker.grid(row=0, column=4, padx=5, pady=10, sticky="ew")
+            self.merge_toggle.grid(row=0, column=5, padx=10, pady=10)
+            for index, button in enumerate(buttons):
+                button.grid(row=0, column=index, padx=5, pady=10, sticky="ew")
+            for index, widget in enumerate(stat_widgets):
+                widget.master.grid(row=0, column=index, padx=10, pady=10, sticky="nsew")
+            self.bottom_buttons.grid_columnconfigure(0, weight=1)
+            self.bottom_buttons.grid_columnconfigure(1, weight=1)
+            self.btn_copy.grid_configure(row=0, column=0, sticky="")
+            self.btn_clear.grid_configure(row=0, column=1, sticky="")
 
     def create_stat_box(self, parent, title, value, col):
         frame = ctk.CTkFrame(parent, fg_color="#2c3e50")

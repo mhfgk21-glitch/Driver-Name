@@ -872,34 +872,103 @@ hr { border-color: var(--line) !important; }
 .st-key-theme_toggle > button {
     width: 38px !important;
     height: 38px !important;
+    min-width: 38px !important;
     padding: 0 !important;
     border-radius: 2rem !important;
-    font-size: 1.05rem !important;
-    line-height: 1 !important;
     border-color: var(--line) !important;
     background: var(--surface-soft) !important;
-    color: var(--brand) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    position: relative !important;
     transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s !important;
 }
 
+.st-key-theme_toggle > button p {
+    display: none !important;
+}
+
+.st-key-theme_toggle > button i.pi {
+    font-size: 1.15rem !important;
+    line-height: 1 !important;
+    pointer-events: none !important;
+    color: #f59e0b !important;
+}
+
+.stApp:has(.theme-dark-marker) .st-key-theme_toggle > button i.pi {
+    color: #fcd34d !important;
+}
+
+.st-key-theme_toggle > button:not(:has(i.pi))::before {
+    content: "\e9c8" !important; /* pi-sun */
+    font-family: 'primeicons' !important;
+    speak: none;
+    font-style: normal !important;
+    font-weight: normal !important;
+    font-variant: normal !important;
+    text-transform: none !important;
+    font-size: 1.15rem !important;
+    color: #f59e0b !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
 .st-key-theme_toggle > button:hover {
-    background: #f7f7fe !important;
-    border-color: #532BFD !important;
-    color: #532BFD !important;
+    background: #fefbf3 !important;
+    border-color: #faedc4 !important;
+    box-shadow: 0 0 0 0.18rem rgba(234, 179, 8, 0.2) !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 0 0 0.18rem rgba(83, 43, 253, 0.16) !important;
+}
+
+.stApp:has(.theme-dark-marker) .st-key-theme_toggle > button:not(:has(i.pi))::before {
+    content: "\e9c7" !important; /* pi-moon */
+    font-family: 'primeicons' !important;
+    font-size: 1.15rem !important;
+    color: #fcd34d !important;
+}
+
+.stApp:has(.theme-dark-marker) .st-key-theme_toggle > button:hover {
+    background: rgba(252, 211, 77, 0.1) !important;
+    border-color: #fcd34d !important;
+    box-shadow: 0 0 0 0.18rem rgba(252, 211, 77, 0.2) !important;
 }
 
 .st-key-user_management_toggle > button {
     width: 38px !important;
     height: 38px !important;
+    min-width: 38px !important;
     padding: 0 !important;
     border-radius: 2rem !important;
     border-color: var(--line) !important;
     background: var(--surface-soft) !important;
     color: #532BFD !important;
-    font-size: 1.05rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    position: relative !important;
     transition: background-color 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.st-key-user_management_toggle > button p {
+    display: none !important;
+}
+
+.st-key-user_management_toggle > button i.pi {
+    font-size: 1.05rem !important;
+    line-height: 1 !important;
+    pointer-events: none !important;
+    color: #532BFD !important;
+}
+
+.st-key-user_management_toggle > button:not(:has(i.pi))::before {
+    content: "\e950" !important; /* pi-cog */
+    font-family: 'primeicons' !important;
+    font-size: 1.05rem !important;
+    color: #532BFD !important;
 }
 
 .st-key-user_management_toggle > button:hover {
@@ -1682,6 +1751,47 @@ body { background:transparent; overflow:hidden; }
         }
     });
 
+    // مزامنة أيقونات PrimeIcons في عناصر الشريط العلوي
+    function syncTopBarIcons() {
+        try {
+            if (!parentDoc) return;
+            
+            // التأكد من تحميل مكتبة خطوط PrimeIcons في نافذة الأصل
+            if (parentDoc.head && !parentDoc.querySelector('link[href*="primeicons"]')) {
+                var piLink = parentDoc.createElement('link');
+                piLink.rel = 'stylesheet';
+                piLink.href = 'https://unpkg.com/primeicons@7.0.0/primeicons.css';
+                parentDoc.head.appendChild(piLink);
+            }
+
+            // زر تبديل الثيم: مطابقة <i class="pi pi-sun"></i> أو <i class="pi pi-moon"></i>
+            var themeBtn = parentDoc.querySelector('.st-key-theme_toggle button');
+            if (themeBtn) {
+                var isDark = parentDoc.querySelector('.theme-dark-marker') !== null;
+                var targetClass = isDark ? 'pi pi-moon' : 'pi pi-sun';
+                var targetColor = isDark ? '#fcd34d' : '#f59e0b';
+                var iconElem = themeBtn.querySelector('i.pi');
+                if (!iconElem) {
+                    themeBtn.innerHTML = '<i class="' + targetClass + '" style="font-size: 1.15rem; color: ' + targetColor + ';"></i>';
+                } else {
+                    if (iconElem.className !== targetClass) iconElem.className = targetClass;
+                    if (iconElem.style.color !== targetColor) iconElem.style.color = targetColor;
+                }
+            }
+
+            // زر إدارة المستخدمين: مطابقة <i class="pi pi-cog"></i>
+            var userBtn = parentDoc.querySelector('.st-key-user_management_toggle button');
+            if (userBtn) {
+                var userIconElem = userBtn.querySelector('i.pi');
+                if (!userIconElem) {
+                    userBtn.innerHTML = '<i class="pi pi-cog" style="font-size: 1.05rem; color: #532BFD;"></i>';
+                }
+            }
+        } catch (e) {}
+    }
+    syncTopBarIcons();
+    setInterval(syncTopBarIcons, 300);
+
     // القياس التلقائي الأولي
     checkNetwork();
 })();
@@ -1690,9 +1800,8 @@ body { background:transparent; overflow:hidden; }
 
     # ── تبديل الثيم ─────────────────────────────────────────────────────────────
     with topbar_cols[3]:
-        theme_icon = "☀️" if st.session_state.dark_mode else "🌙"
         theme_tip  = "الوضع النهاري" if st.session_state.dark_mode else "الوضع الليلي"
-        if st.button(theme_icon, key="theme_toggle", help=theme_tip, type="secondary"):
+        if st.button("", key="theme_toggle", help=theme_tip, type="secondary"):
             st.session_state.dark_mode = not st.session_state.dark_mode
             st.rerun()
 
@@ -1718,7 +1827,7 @@ body { background:transparent; overflow:hidden; }
     # ── إدارة المستخدمين (للمدير فقط) ──────────────────────────────────────────
     with topbar_cols[6]:
         if st.session_state.current_role == "admin":
-            if st.button("⚙️", key="user_management_toggle",
+            if st.button("", key="user_management_toggle",
                          help="إدارة المستخدمين", type="secondary",
                          use_container_width=True):
                 st.session_state.current_page = "user_management"
