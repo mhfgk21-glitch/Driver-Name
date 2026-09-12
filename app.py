@@ -603,9 +603,6 @@ hr { border-color: var(--line) !important; }
     padding: 0 !important;
     margin: 0 !important;
     gap: 12px;
-    flex-wrap: nowrap !important;
-    overflow-x: auto;
-    scrollbar-width: thin;
 }
 
 .st-key-topbar_theme_slot,
