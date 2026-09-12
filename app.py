@@ -1435,7 +1435,7 @@ for key in STATUS_CONFIG:
 
 # ─── الشريط العلوي ─────────────────────────────────────────────────────────────
 with st.container(key="app_topbar"):
-    topbar_cols = st.columns([0.7, 2.55, 1.25, 1.65, 0.58, 0.58, 0.95])
+    topbar_cols = st.columns([0.7, 2.55, 1.25, 1.65, 0.58, 1.65])
 
     # ── الشعار ──────────────────────────────────────────────────────────────────
     with topbar_cols[0]:
@@ -1891,27 +1891,29 @@ body { background:transparent; overflow:hidden; }
 
     # ── إدارة المستخدمين (للمدير فقط) ──────────────────────────────────────────
     with topbar_cols[5]:
-        with st.container(key="topbar_admin_slot"):
-            if st.session_state.current_role == "admin":
-                if st.button("", key="user_management_toggle",
-                             help="إدارة المستخدمين", type="secondary",
-                             use_container_width=True):
-                    st.session_state.current_page = "user_management"
-                    st.session_state.show_user_management = False
-                    st.rerun()
+        action_cols = st.columns([0.58, 0.95], gap="small")
+        with action_cols[0]:
+            with st.container(key="topbar_admin_slot"):
+                if st.session_state.current_role == "admin":
+                    if st.button("", key="user_management_toggle",
+                                 help="إدارة المستخدمين", type="secondary",
+                                 use_container_width=True):
+                        st.session_state.current_page = "user_management"
+                        st.session_state.show_user_management = False
+                        st.rerun()
 
-    # ── تسجيل الخروج ────────────────────────────────────────────────────────────
-    with topbar_cols[6]:
-        with st.container(key="topbar_logout_slot"):
-            if st.button("خروج", key="topbar_logout",
-                         help="تسجيل الخروج", type="secondary",
-                         use_container_width=True):
-                st.session_state.authenticated = False
-                st.session_state.current_user = None
-                st.session_state.current_role = None
-                st.session_state.show_user_management = False
-                st.session_state.current_page = "home"
-                st.rerun()
+        # ── تسجيل الخروج ────────────────────────────────────────────────────────
+        with action_cols[1]:
+            with st.container(key="topbar_logout_slot"):
+                if st.button("خروج", key="topbar_logout",
+                             help="تسجيل الخروج", type="secondary",
+                             use_container_width=True):
+                    st.session_state.authenticated = False
+                    st.session_state.current_user = None
+                    st.session_state.current_role = None
+                    st.session_state.show_user_management = False
+                    st.session_state.current_page = "home"
+                    st.rerun()
 
     # ── خيارات المعالجة المرفوعة للشريط العلوي ────────────────────────────────────
     st.markdown("<div class='topbar-subdivider'></div>", unsafe_allow_html=True)
