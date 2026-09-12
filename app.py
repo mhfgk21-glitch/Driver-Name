@@ -543,14 +543,14 @@ hr { border-color: var(--line) !important; }
 .upload-label {
     display: flex;
     align-items: center;
-    gap: 7px;
-    padding: 8px 10px;
+    gap: 10px;
+    padding: 8px 12px;
     border: 1px solid currentColor;
-    border-radius: var(--p-border-radius-md);
+    border-radius: 10px;
     background: var(--status-soft, #f8fafc);
     font-weight: 700;
     margin-bottom: 6px;
-    min-height: 42px;
+    min-height: 50px;
     box-sizing: border-box;
 }
 
@@ -1074,12 +1074,22 @@ hr { border-color: var(--line) !important; }
 .upload-label .pi {
     display: inline-grid;
     place-items: center;
-    width: 25px;
-    height: 25px;
-    border-radius: 50%;
-    background: currentColor;
-    color: white;
-    font-size: 0.8rem;
+    flex: 0 0 30px;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.72);
+    color: inherit;
+    border: 1px solid currentColor;
+    font-size: 1rem;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba(23, 32, 51, 0.08);
+}
+
+.upload-label > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 @media (max-width: 768px) {
@@ -1961,7 +1971,7 @@ status_labels = list(STATUS_CONFIG.keys())
 for i, status in enumerate(status_labels):
     cfg = STATUS_CONFIG[status]
     with upload_cols[i]:
-        st.markdown(f"<div class='upload-label' style='color:{cfg['color']};--status-soft:{cfg['soft_color']}'><i class='pi {cfg['prime_icon']}'></i><span>{status}</span></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='upload-label' style='color:{cfg['color']};--status-soft:{cfg['soft_color']}'><i class='pi {cfg['prime_icon']}' aria-hidden='true'></i><span>{status}</span></div>", unsafe_allow_html=True)
         uploaded = st.file_uploader("اختر ملفًا", type=["xlsx", "xls", "csv"], key=f"up_{status}", label_visibility="collapsed")
 
         if uploaded:
