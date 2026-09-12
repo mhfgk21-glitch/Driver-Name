@@ -929,37 +929,121 @@ hr { border-color: var(--line) !important; }
 .login-page {
     display: flex;
     direction: rtl;
-    min-height: 520px;
-    margin: 2rem auto;
+    width: min(100%, 1080px);
+    min-height: 560px;
+    margin: clamp(1rem, 5vh, 3.5rem) auto;
     overflow: hidden;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 16px;
-    box-shadow: var(--shadow);
+    border-radius: 22px;
+    box-shadow: 0 24px 60px rgba(23, 32, 51, 0.12), 0 4px 14px rgba(23, 32, 51, 0.06);
 }
 
 .login-panel {
     display: flex;
-    flex: 0 0 380px;
+    flex: 0 0 420px;
     flex-direction: column;
     justify-content: center;
-    padding: 42px 34px;
+    padding: 56px 46px;
     background: var(--surface);
 }
 
 .login-art {
+    position: relative;
     display: flex;
     flex: 1;
     align-items: center;
     justify-content: center;
-    min-height: 520px;
-    background: linear-gradient(135deg, #f0fdfa, #e0f2fe);
-    color: var(--brand-dark);
+    min-height: 560px;
+    overflow: hidden;
+    background: linear-gradient(145deg, #0f766e 0%, #115e59 58%, #164e63 100%);
+    color: white;
 }
 
-.login-art .pi {
-    font-size: 8rem;
-    opacity: 0.2;
+.login-art::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.22;
+    background-image: linear-gradient(135deg, rgba(255,255,255,0.16) 1px, transparent 1px), linear-gradient(45deg, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 34px 34px;
+    transform: scale(1.15);
+}
+
+.login-art-content {
+    position: relative;
+    z-index: 1;
+    width: min(78%, 420px);
+}
+
+.login-art-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 11px;
+    border: 1px solid rgba(255,255,255,0.24);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.12);
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.login-art-icon {
+    display: grid;
+    place-items: center;
+    width: 72px;
+    height: 72px;
+    margin: 28px 0 18px;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    background: rgba(255,255,255,0.14);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.14);
+}
+
+.login-art-icon .pi {
+    font-size: 2rem;
+}
+
+.login-art-title {
+    margin: 0 0 10px;
+    color: white;
+    font-size: 2rem;
+    line-height: 1.25;
+}
+
+.login-art-copy {
+    margin: 0 0 26px;
+    color: rgba(255,255,255,0.78);
+    font-size: 0.9rem;
+    line-height: 1.8;
+}
+
+.login-art-stats {
+    display: flex;
+    gap: 10px;
+}
+
+.login-art-stat {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.1);
+}
+
+.login-art-stat strong,
+.login-art-stat span {
+    display: block;
+}
+
+.login-art-stat strong {
+    margin-bottom: 3px;
+    font-size: 1.1rem;
+}
+
+.login-art-stat span {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.7rem;
 }
 
 .login-logo {
@@ -990,19 +1074,25 @@ hr { border-color: var(--line) !important; }
 }
 
 .login-panel .stTextInput input {
-    min-height: 42px;
+    min-height: 46px;
+    border-radius: 10px !important;
+    padding-inline: 14px !important;
 }
 
 .login-panel .stFormSubmitButton button {
     width: 100%;
-    min-height: 42px;
+    min-height: 46px;
     border: 0;
+    border-radius: 10px !important;
     background: var(--brand);
     color: white;
+    font-weight: 800;
+    box-shadow: 0 8px 18px rgba(15, 118, 110, 0.2);
 }
 
 .login-panel .stFormSubmitButton button:hover {
     background: var(--brand-dark);
+    transform: translateY(-1px);
 }
 
 /* Icon-only topbar buttons */
@@ -1326,10 +1416,13 @@ hr { border-color: var(--line) !important; }
     background: #172033 !important;
 }
 
-.stApp:has(.theme-dark-marker) .login-panel,
-.stApp:has(.theme-dark-marker) .login-art {
+.stApp:has(.theme-dark-marker) .login-panel {
     background: #172033;
     border-color: #334155;
+}
+
+.stApp:has(.theme-dark-marker) .login-art {
+    background: linear-gradient(145deg, #115e59 0%, #134e4a 58%, #164e63 100%);
 }
 
 .stApp:has(.theme-dark-marker) .stTabs [aria-selected="true"] {
@@ -1381,7 +1474,21 @@ if not st.session_state.authenticated:
             st.markdown("</div>", unsafe_allow_html=True)
 
         with login_cols[1]:
-            st.markdown("<div class='login-art'><i class='pi pi-chart-bar'></i></div>", unsafe_allow_html=True)
+            st.markdown("""
+            <div class='login-art'>
+                <div class='login-art-content'>
+                    <div class='login-art-badge'><i class='pi pi-shield'></i><span>منصة تشغيل موثوقة</span></div>
+                    <div class='login-art-icon'><i class='pi pi-chart-bar' aria-hidden='true'></i></div>
+                    <h2 class='login-art-title'>كل بيانات المندوبين في مكان واحد</h2>
+                    <p class='login-art-copy'>تابع الملفات والحالات والإحصائيات من لوحة واضحة تساعدك على اتخاذ القرار بسرعة.</p>
+                    <div class='login-art-stats'>
+                        <div class='login-art-stat'><strong>4</strong><span>حالات متابعة</span></div>
+                        <div class='login-art-stat'><strong>24/7</strong><span>وصول للبيانات</span></div>
+                        <div class='login-art-stat'><strong>آمن</strong><span>إدارة صلاحيات</span></div>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
     if submitted:
         account = st.session_state.managed_users.get(username.strip())
