@@ -107,6 +107,15 @@ PASSWORD_HASH_ITERATIONS = 310_000
 cookie_manager = stx.CookieManager(key="session_cookie_manager") if stx else None
 
 
+def delete_session_cookie() -> None:
+    if not cookie_manager:
+        return
+    try:
+        cookie_manager.delete("auth")
+    except (KeyError, AttributeError):
+        pass
+
+
 def create_session_token(username: str, role: str) -> str:
     payload = {
         "username": username,
@@ -174,8 +183,7 @@ def restore_session_from_query() -> None:
         st.session_state.current_role = payload["role"]
     except (KeyError, ValueError, TypeError, json.JSONDecodeError, UnicodeDecodeError):
         st.query_params.pop("auth", None)
-        if cookie_manager:
-            cookie_manager.delete("auth")
+        delete_session_cookie()
 
 
 restore_session_from_query()
@@ -2064,8 +2072,7 @@ body { background:transparent; overflow:hidden; }
                     st.session_state.show_user_management = False
                     st.session_state.current_page = "home"
                     st.query_params.pop("auth", None)
-                    if cookie_manager:
-                        cookie_manager.delete("auth")
+                    delete_session_cookie()
                     st.rerun()
 
     # ── خيارات المعالجة المرفوعة للشريط العلوي ────────────────────────────────────
