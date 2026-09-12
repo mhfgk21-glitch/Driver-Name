@@ -97,6 +97,16 @@ def delete_managed_user(username: str) -> None:
         connection.execute("DELETE FROM users WHERE username = ?", (username,))
 
 
+def clear_uploaded_data() -> None:
+    if st.session_state.current_role != "admin":
+        st.warning("صلاحية مسح البيانات متاحة لمدير النظام فقط.")
+        return
+    for key in STATUS_CONFIG:
+        st.session_state[f"data_{key}"] = None
+        st.session_state[f"raw_{key}"] = None
+    st.rerun()
+
+
 if "managed_users" not in st.session_state:
     st.session_state.managed_users = load_managed_users()
 
@@ -2198,13 +2208,11 @@ body { background:transparent; overflow:hidden; }
         with opt_cols[3]:
             merge_mode = st.toggle("دمج كل الحالات معاً", key="opt_merge_mode")
         with opt_cols[4]:
-            if st.button("مسح البيانات", key="opt_clear_all",
-                         help="مسح جميع الجداول والبيانات المرفوعة (للمدير فقط)", type="secondary",
-                         use_container_width=True, disabled=st.session_state.current_role != "admin"):
-                for k in STATUS_CONFIG:
-                    st.session_state[f"data_{k}"] = None
-                    st.session_state[f"raw_{k}"] = None
-                st.rerun()
+            if st.session_state.current_role == "admin":
+                if st.button("مسح البيانات", key="opt_clear_all",
+                             help="مسح جميع الجداول والبيانات المرفوعة", type="secondary",
+                             use_container_width=True):
+                    clear_uploaded_data()
     else:
         opt_cols = st.columns([1.3, 1.6, 2.9, 1.2])
         with opt_cols[0]:
@@ -2215,13 +2223,11 @@ body { background:transparent; overflow:hidden; }
         with opt_cols[2]:
             st.markdown("<div class='topbar-opt-hint'><i class='pi pi-info-circle'></i> <span>خيارات المعالجة: فلترة التواريخ ودمج الحالات المرفوعة تلقائياً</span></div>", unsafe_allow_html=True)
         with opt_cols[3]:
-            if st.button("مسح البيانات", key="opt_clear_all",
-                         help="مسح جميع الجداول والبيانات المرفوعة (للمدير فقط)", type="secondary",
-                         use_container_width=True, disabled=st.session_state.current_role != "admin"):
-                for k in STATUS_CONFIG:
-                    st.session_state[f"data_{k}"] = None
-                    st.session_state[f"raw_{k}"] = None
-                st.rerun()
+            if st.session_state.current_role == "admin":
+                if st.button("مسح البيانات", key="opt_clear_all",
+                             help="مسح جميع الجداول والبيانات المرفوعة", type="secondary",
+                             use_container_width=True):
+                    clear_uploaded_data()
 
 
 
