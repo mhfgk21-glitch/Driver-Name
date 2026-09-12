@@ -600,6 +600,24 @@ hr { border-color: var(--line) !important; }
     gap: 8px;
 }
 
+.st-key-topbar_theme_slot,
+.st-key-topbar_bell_slot,
+.st-key-topbar_admin_slot,
+.st-key-topbar_logout_slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    width: 100%;
+}
+
+.st-key-topbar_theme_slot > div,
+.st-key-topbar_bell_slot > div,
+.st-key-topbar_admin_slot > div,
+.st-key-topbar_logout_slot > div {
+    width: 100%;
+}
+
 .topbar-subdivider {
     height: 1px;
     background: var(--line);
@@ -699,6 +717,7 @@ hr { border-color: var(--line) !important; }
 
 /* Notification bell */
 .topbar-bell {
+    position: relative;
     display: grid;
     place-items: center;
     width: 38px;
@@ -710,6 +729,18 @@ hr { border-color: var(--line) !important; }
     transition: all 0.2s ease;
     margin: auto;
     user-select: none;
+}
+
+.topbar-bell::after {
+    content: "";
+    position: absolute;
+    top: 6px;
+    inset-inline-start: 7px;
+    width: 6px;
+    height: 6px;
+    border: 2px solid var(--surface);
+    border-radius: 50%;
+    background: #22c55e;
 }
 
 .topbar-bell i {
@@ -921,6 +952,13 @@ hr { border-color: var(--line) !important; }
     border-color: #faedc4 !important;
     box-shadow: 0 0 0 0.18rem rgba(234, 179, 8, 0.2) !important;
     transform: translateY(-1px) !important;
+}
+
+.st-key-theme_toggle > button:focus-visible,
+.st-key-user_management_toggle > button:focus-visible,
+.st-key-topbar_logout > button:focus-visible {
+    outline: 3px solid rgba(83, 43, 253, 0.3) !important;
+    outline-offset: 2px !important;
 }
 
 .stApp:has(.theme-dark-marker) .st-key-theme_toggle > button:not(:has(i.pi))::before {
@@ -1852,14 +1890,16 @@ body { background:transparent; overflow:hidden; }
 
     # ── تبديل الثيم ─────────────────────────────────────────────────────────────
     with topbar_cols[3]:
-        theme_tip  = "الوضع النهاري" if st.session_state.dark_mode else "الوضع الليلي"
-        if st.button("", key="theme_toggle", help=theme_tip, type="secondary"):
-            st.session_state.dark_mode = not st.session_state.dark_mode
-            st.rerun()
+        with st.container(key="topbar_theme_slot"):
+            theme_tip  = "الوضع النهاري" if st.session_state.dark_mode else "الوضع الليلي"
+            if st.button("", key="theme_toggle", help=theme_tip, type="secondary"):
+                st.session_state.dark_mode = not st.session_state.dark_mode
+                st.rerun()
 
     # ── الإشعارات ───────────────────────────────────────────────────────────────
     with topbar_cols[4]:
-        st.markdown("<div class='topbar-bell' title='لا توجد إشعارات جديدة'><i class='pi pi-bell'></i></div>", unsafe_allow_html=True)
+        with st.container(key="topbar_bell_slot"):
+            st.markdown("<div class='topbar-bell' title='لا توجد إشعارات جديدة' aria-label='الإشعارات'><i class='pi pi-bell'></i></div>", unsafe_allow_html=True)
 
     # ── بطاقة المستخدم ──────────────────────────────────────────────────────────
     with topbar_cols[5]:
@@ -1878,25 +1918,27 @@ body { background:transparent; overflow:hidden; }
 
     # ── إدارة المستخدمين (للمدير فقط) ──────────────────────────────────────────
     with topbar_cols[6]:
-        if st.session_state.current_role == "admin":
-            if st.button("", key="user_management_toggle",
-                         help="إدارة المستخدمين", type="secondary",
-                         use_container_width=True):
-                st.session_state.current_page = "user_management"
-                st.session_state.show_user_management = False
-                st.rerun()
+        with st.container(key="topbar_admin_slot"):
+            if st.session_state.current_role == "admin":
+                if st.button("", key="user_management_toggle",
+                             help="إدارة المستخدمين", type="secondary",
+                             use_container_width=True):
+                    st.session_state.current_page = "user_management"
+                    st.session_state.show_user_management = False
+                    st.rerun()
 
     # ── تسجيل الخروج ────────────────────────────────────────────────────────────
     with topbar_cols[7]:
-        if st.button("خروج", key="topbar_logout",
-                     help="تسجيل الخروج", type="secondary",
-                     use_container_width=True):
-            st.session_state.authenticated = False
-            st.session_state.current_user = None
-            st.session_state.current_role = None
-            st.session_state.show_user_management = False
-            st.session_state.current_page = "home"
-            st.rerun()
+        with st.container(key="topbar_logout_slot"):
+            if st.button("خروج", key="topbar_logout",
+                         help="تسجيل الخروج", type="secondary",
+                         use_container_width=True):
+                st.session_state.authenticated = False
+                st.session_state.current_user = None
+                st.session_state.current_role = None
+                st.session_state.show_user_management = False
+                st.session_state.current_page = "home"
+                st.rerun()
 
     # ── خيارات المعالجة المرفوعة للشريط العلوي ────────────────────────────────────
     st.markdown("<div class='topbar-subdivider'></div>", unsafe_allow_html=True)
