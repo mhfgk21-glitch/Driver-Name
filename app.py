@@ -5,6 +5,11 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import os
+import base64
+import hashlib
+import hmac
+import json
+import time
 from io import BytesIO
 from datetime import date, timedelta
 
@@ -46,6 +51,55 @@ if "managed_users" not in st.session_state:
     st.session_state.managed_users = {
         username: dict(account) for username, account in AUTH_USERS.items()
     }
+
+SESSION_TTL_SECONDS = 12 * 60 * 60
+SESSION_SECRET = os.getenv("APP_SESSION_SECRET", "driver-number-session-secret")
+
+
+def create_session_token(username: str, role: str) -> str:
+    payload = {
+        "username": username,
+        "role": role,
+        "expires": int(time.time()) + SESSION_TTL_SECONDS,
+    }
+    encoded = base64.urlsafe_b64encode(
+        json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    ).decode("ascii").rstrip("=")
+    signature = hmac.new(
+        SESSION_SECRET.encode("utf-8"), encoded.encode("ascii"), hashlib.sha256
+    ).hexdigest()
+    return f"{encoded}.{signature}"
+
+
+def restore_session_from_query() -> None:
+    token = st.query_params.get("auth")
+    if not token or st.session_state.authenticated:
+        return
+
+    try:
+        encoded, signature = token.rsplit(".", 1)
+        expected = hmac.new(
+            SESSION_SECRET.encode("utf-8"), encoded.encode("ascii"), hashlib.sha256
+        ).hexdigest()
+        if not hmac.compare_digest(signature, expected):
+            raise ValueError("invalid session signature")
+
+        padded = encoded + "=" * (-len(encoded) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(padded).decode("utf-8"))
+        account = st.session_state.managed_users.get(payload["username"])
+        if payload["expires"] <= int(time.time()) or not account:
+            raise ValueError("expired session")
+        if account["role"] != payload["role"]:
+            raise ValueError("role mismatch")
+
+        st.session_state.authenticated = True
+        st.session_state.current_user = payload["username"]
+        st.session_state.current_role = payload["role"]
+    except (KeyError, ValueError, TypeError, json.JSONDecodeError, UnicodeDecodeError):
+        st.query_params.pop("auth", None)
+
+
+restore_session_from_query()
 
 # ─── CSS مخصص ─────────────────────────────────────────────────────────────────
 st.markdown("""
@@ -1248,6 +1302,7 @@ if not st.session_state.authenticated:
             st.session_state.authenticated = True
             st.session_state.current_user = username.strip()
             st.session_state.current_role = account["role"]
+            st.query_params["auth"] = create_session_token(username.strip(), account["role"])
             st.rerun()
         st.error("بيانات الدخول غير صحيحة")
     st.stop()
@@ -1920,6 +1975,7 @@ body { background:transparent; overflow:hidden; }
                     st.session_state.current_role = None
                     st.session_state.show_user_management = False
                     st.session_state.current_page = "home"
+                    st.query_params.pop("auth", None)
                     st.rerun()
 
     # ── خيارات المعالجة المرفوعة للشريط العلوي ────────────────────────────────────
