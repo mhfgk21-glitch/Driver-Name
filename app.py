@@ -1091,6 +1091,18 @@ hr { border-color: var(--line) !important; }
     --surface-soft: #1e293b;
     --brand-soft: #134e4a;
     background: #0f172a;
+    color-scheme: dark;
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.stApp,
+.stat-card,
+.status-card,
+.result-box,
+.login-panel,
+.stTabs [data-baseweb="tab-list"],
+[data-testid="stExpander"] {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
 }
 
 .stApp:has(.theme-dark-marker) [data-testid="stSidebar"],
@@ -1111,11 +1123,49 @@ hr { border-color: var(--line) !important; }
 }
 
 .stApp:has(.theme-dark-marker) .stTextInput > div > div > input,
+.stApp:has(.theme-dark-marker) textarea,
+.stApp:has(.theme-dark-marker) [data-baseweb="select"] > div,
+.stApp:has(.theme-dark-marker) [data-baseweb="input"] > div,
 .stApp:has(.theme-dark-marker) .stButton > button,
 .stApp:has(.theme-dark-marker) [data-testid="stFileUploader"] section button {
     background: #1e293b !important;
     border-color: #475569 !important;
     color: #e5e7eb !important;
+}
+
+.stApp:has(.theme-dark-marker) [data-testid="stWidgetLabel"],
+.stApp:has(.theme-dark-marker) [data-testid="stMarkdownContainer"],
+.stApp:has(.theme-dark-marker) [data-testid="stCaptionContainer"],
+.stApp:has(.theme-dark-marker) .section-title,
+.stApp:has(.theme-dark-marker) .login-title,
+.stApp:has(.theme-dark-marker) .login-subtitle {
+    color: #e5e7eb !important;
+}
+
+.stApp:has(.theme-dark-marker) [data-baseweb="popover"],
+.stApp:has(.theme-dark-marker) [data-baseweb="menu"],
+.stApp:has(.theme-dark-marker) [role="listbox"] {
+    background: #172033 !important;
+    border-color: #475569 !important;
+    color: #e5e7eb !important;
+}
+
+.stApp:has(.theme-dark-marker) [role="option"]:hover,
+.stApp:has(.theme-dark-marker) [data-baseweb="menu"] li:hover {
+    background: #334155 !important;
+}
+
+.stApp:has(.theme-dark-marker) [data-testid="stDataFrame"],
+.stApp:has(.theme-dark-marker) [data-testid="stTable"],
+.stApp:has(.theme-dark-marker) [data-testid="stExpander"] {
+    border-color: #334155 !important;
+    background: #172033 !important;
+}
+
+.stApp:has(.theme-dark-marker) .login-panel,
+.stApp:has(.theme-dark-marker) .login-art {
+    background: #172033;
+    border-color: #334155;
 }
 
 .stApp:has(.theme-dark-marker) .stTabs [aria-selected="true"] {
