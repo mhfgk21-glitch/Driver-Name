@@ -602,7 +602,7 @@ hr { border-color: var(--line) !important; }
     box-shadow: none !important;
     padding: 0 !important;
     margin: 0 !important;
-    gap: 8px;
+    gap: 12px;
 }
 
 .st-key-topbar_theme_slot,
@@ -621,6 +621,13 @@ hr { border-color: var(--line) !important; }
 .st-key-topbar_admin_slot > div,
 .st-key-topbar_logout_slot > div {
     width: 100%;
+}
+
+.st-key-topbar_theme_slot,
+.st-key-topbar_bell_slot,
+.st-key-topbar_admin_slot {
+    max-width: 48px;
+    margin-inline: auto;
 }
 
 .topbar-subdivider {
@@ -1462,7 +1469,7 @@ for key in STATUS_CONFIG:
 
 # ─── الشريط العلوي ─────────────────────────────────────────────────────────────
 with st.container(key="app_topbar"):
-    topbar_cols = st.columns([0.62, 2.65, 1.1, 0.52, 0.52, 1.48, 0.52, 0.88])
+    topbar_cols = st.columns([0.7, 2.55, 1.25, 1.65, 0.58, 0.58, 0.58, 0.95])
 
     # ── الشعار ──────────────────────────────────────────────────────────────────
     with topbar_cols[0]:
@@ -1893,21 +1900,8 @@ body { background:transparent; overflow:hidden; }
 </script>
 """, height=46)
 
-    # ── تبديل الثيم ─────────────────────────────────────────────────────────────
-    with topbar_cols[3]:
-        with st.container(key="topbar_theme_slot"):
-            theme_tip  = "الوضع النهاري" if st.session_state.dark_mode else "الوضع الليلي"
-            if st.button("", key="theme_toggle", help=theme_tip, type="secondary"):
-                st.session_state.dark_mode = not st.session_state.dark_mode
-                st.rerun()
-
-    # ── الإشعارات ───────────────────────────────────────────────────────────────
-    with topbar_cols[4]:
-        with st.container(key="topbar_bell_slot"):
-            st.markdown("<div class='topbar-bell' title='لا توجد إشعارات جديدة' aria-label='الإشعارات'><i class='pi pi-bell'></i></div>", unsafe_allow_html=True)
-
     # ── بطاقة المستخدم ──────────────────────────────────────────────────────────
-    with topbar_cols[5]:
+    with topbar_cols[3]:
         role_label = "مدير النظام" if st.session_state.current_role == "admin" else "موظف"
         role_cls   = "role-admin"    if st.session_state.current_role == "admin" else "role-employee"
         user_name  = st.session_state.current_user or "المستخدم"
@@ -1920,6 +1914,19 @@ body { background:transparent; overflow:hidden; }
                 <span class='topbar-role-badge {role_cls}'>{role_label}</span>
             </span>
         </div>""", unsafe_allow_html=True)
+
+    # ── تبديل الثيم ─────────────────────────────────────────────────────────────
+    with topbar_cols[4]:
+        with st.container(key="topbar_theme_slot"):
+            theme_tip  = "الوضع النهاري" if st.session_state.dark_mode else "الوضع الليلي"
+            if st.button("", key="theme_toggle", help=theme_tip, type="secondary"):
+                st.session_state.dark_mode = not st.session_state.dark_mode
+                st.rerun()
+
+    # ── الإشعارات ───────────────────────────────────────────────────────────────
+    with topbar_cols[5]:
+        with st.container(key="topbar_bell_slot"):
+            st.markdown("<div class='topbar-bell' title='لا توجد إشعارات جديدة' aria-label='الإشعارات'><i class='pi pi-bell'></i></div>", unsafe_allow_html=True)
 
     # ── إدارة المستخدمين (للمدير فقط) ──────────────────────────────────────────
     with topbar_cols[6]:
