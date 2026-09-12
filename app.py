@@ -485,6 +485,11 @@ hr { border-color: var(--line) !important; }
 .pi::before { font-family: var(--font-sans); font-weight: 700; }
 .pi-bars::before { content: "☰"; }
 .pi-sun::before { content: "☀"; }
+.pi-moon::before { content: "☾"; }
+.pi-wifi::before { content: "◉"; }
+.pi-bell::before { content: "♢"; }
+.pi-cog::before { content: "⚙"; }
+.pi-sign-out::before { content: "⇥"; }
 .pi-sliders-h::before { content: "⚙"; }
 .pi-search::before { content: "⌕"; }
 .pi-upload::before { content: "↑"; }
@@ -932,8 +937,8 @@ hr { border-color: var(--line) !important; }
 }
 
 .st-key-theme_toggle > button:not(:has(i.pi))::before {
-    content: "\e9c8" !important; /* pi-sun */
-    font-family: 'primeicons' !important;
+    content: "☀" !important;
+    font-family: var(--font-sans) !important;
     speak: none;
     font-style: normal !important;
     font-weight: normal !important;
@@ -962,8 +967,8 @@ hr { border-color: var(--line) !important; }
 }
 
 .stApp:has(.theme-dark-marker) .st-key-theme_toggle > button:not(:has(i.pi))::before {
-    content: "\e9c7" !important; /* pi-moon */
-    font-family: 'primeicons' !important;
+    content: "☾" !important;
+    font-family: var(--font-sans) !important;
     font-size: 1.15rem !important;
     color: #fcd34d !important;
 }
@@ -1003,9 +1008,9 @@ hr { border-color: var(--line) !important; }
 }
 
 .st-key-user_management_toggle > button:not(:has(i.pi))::before {
-    content: "\e950" !important; /* pi-cog */
-    font-family: 'primeicons' !important;
-    font-size: 1.05rem !important;
+    content: "⚙" !important;
+    font-family: var(--font-sans) !important;
+    font-size: 1.1rem !important;
     color: #532BFD !important;
 }
 
@@ -1035,8 +1040,8 @@ hr { border-color: var(--line) !important; }
 }
 
 .st-key-topbar_logout > button::before {
-    content: "\e978"; /* pi-sign-out */
-    font-family: 'primeicons' !important;
+    content: "⇥";
+    font-family: var(--font-sans) !important;
     font-size: 0.85rem;
 }
 
@@ -1056,20 +1061,20 @@ hr { border-color: var(--line) !important; }
 }
 
 .st-key-opt_clear_all > button::before {
-    content: "\e994"; /* pi-trash */
-    font-family: 'primeicons' !important;
+    content: "⌫";
+    font-family: var(--font-sans) !important;
     font-size: 0.85rem;
 }
 
 .st-key-back_home > button::before {
-    content: "\e908"; /* pi-arrow-right */
-    font-family: 'primeicons' !important;
+    content: "→";
+    font-family: var(--font-sans) !important;
     font-size: 0.85rem;
 }
 
 .stDownloadButton > button::before {
-    content: "\e91e"; /* pi-download */
-    font-family: 'primeicons' !important;
+    content: "↓";
+    font-family: var(--font-sans) !important;
     font-size: 0.85rem;
 }
 
