@@ -1060,6 +1060,17 @@ hr { border-color: var(--line) !important; }
     transform: translateY(-1px) !important;
 }
 
+/* Keep every topbar icon at the same visual size. */
+.topbar-bell i,
+.st-key-theme_toggle > button i.pi,
+.st-key-theme_toggle > button::before,
+.st-key-user_management_toggle > button i.pi,
+.st-key-user_management_toggle > button::before,
+.st-key-topbar_logout > button::before {
+    font-size: 1.05rem !important;
+    line-height: 1 !important;
+}
+
 .st-key-opt_clear_all > button {
     display: inline-flex !important;
     align-items: center !important;
