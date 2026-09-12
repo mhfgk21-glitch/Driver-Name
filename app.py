@@ -9,6 +9,7 @@ import base64
 import hashlib
 import hmac
 import json
+import secrets
 import time
 from io import BytesIO
 from datetime import date, datetime, timedelta
@@ -60,6 +61,7 @@ if "managed_users" not in st.session_state:
 SESSION_TTL_SECONDS = 12 * 60 * 60
 SESSION_SECRET = os.getenv("APP_SESSION_SECRET", "driver-number-session-secret")
 MAX_UPLOAD_SIZE_BYTES = 20 * 1024 * 1024
+PASSWORD_HASH_ITERATIONS = 310_000
 cookie_manager = stx.CookieManager(key="session_cookie_manager") if stx else None
 
 
@@ -76,6 +78,31 @@ def create_session_token(username: str, role: str) -> str:
         SESSION_SECRET.encode("utf-8"), encoded.encode("ascii"), hashlib.sha256
     ).hexdigest()
     return f"{encoded}.{signature}"
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), salt, PASSWORD_HASH_ITERATIONS
+    )
+    salt_text = base64.urlsafe_b64encode(salt).decode("ascii").rstrip("=")
+    digest_text = base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+    return f"pbkdf2_sha256${PASSWORD_HASH_ITERATIONS}${salt_text}${digest_text}"
+
+
+def verify_password(password: str, stored_password: str) -> bool:
+    if not stored_password.startswith("pbkdf2_sha256$"):
+        return hmac.compare_digest(password, stored_password)
+
+    try:
+        _, iterations_text, salt_text, digest_text = stored_password.split("$", 3)
+        iterations = int(iterations_text)
+        salt = base64.urlsafe_b64decode(salt_text + "=" * (-len(salt_text) % 4))
+        expected = base64.urlsafe_b64decode(digest_text + "=" * (-len(digest_text) % 4))
+        actual = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
+        return hmac.compare_digest(actual, expected)
+    except (ValueError, TypeError):
+        return False
 
 
 def restore_session_from_query() -> None:
@@ -1308,7 +1335,7 @@ if not st.session_state.authenticated:
 
     if submitted:
         account = st.session_state.managed_users.get(username.strip())
-        if account and password == account["password"]:
+        if account and verify_password(password, account["password"]):
             st.session_state.authenticated = True
             st.session_state.current_user = username.strip()
             st.session_state.current_role = account["role"]
@@ -1357,7 +1384,7 @@ if st.session_state.current_page == "user_management" and st.session_state.curre
                 st.error("اسم المستخدم موجود مسبقًا")
             else:
                 st.session_state.managed_users[clean_username] = {
-                    "password": new_password,
+                    "password": hash_password(new_password),
                     "role": "employee",
                     "label": "موظف",
                 }
