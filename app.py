@@ -606,7 +606,6 @@ hr { border-color: var(--line) !important; }
 }
 
 .st-key-topbar_theme_slot,
-.st-key-topbar_bell_slot,
 .st-key-topbar_admin_slot,
 .st-key-topbar_logout_slot {
     display: flex;
@@ -617,14 +616,12 @@ hr { border-color: var(--line) !important; }
 }
 
 .st-key-topbar_theme_slot > div,
-.st-key-topbar_bell_slot > div,
 .st-key-topbar_admin_slot > div,
 .st-key-topbar_logout_slot > div {
     width: 100%;
 }
 
 .st-key-topbar_theme_slot,
-.st-key-topbar_bell_slot,
 .st-key-topbar_admin_slot {
     max-width: 48px;
     margin-inline: auto;
@@ -728,50 +725,6 @@ hr { border-color: var(--line) !important; }
 }
 
 /* Notification bell */
-.topbar-bell {
-    position: relative;
-    display: grid;
-    place-items: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 2rem;
-    background: var(--surface-soft);
-    border: 1px solid var(--line);
-    cursor: default;
-    transition: all 0.2s ease;
-    margin: auto;
-    user-select: none;
-}
-
-.topbar-bell::after {
-    content: "";
-    position: absolute;
-    top: 6px;
-    inset-inline-start: 7px;
-    width: 6px;
-    height: 6px;
-    border: 2px solid var(--surface);
-    border-radius: 50%;
-    background: #22c55e;
-}
-
-.topbar-bell i {
-    font-size: 1.05rem;
-    color: var(--muted);
-    transition: color 0.2s;
-}
-
-.topbar-bell:hover {
-    background: #fefbf3;
-    border-color: #faedc4;
-    transform: translateY(-1px);
-    box-shadow: 0 0 0 0.18rem rgba(234, 179, 8, 0.2);
-}
-
-.topbar-bell:hover i {
-    color: #a47d06;
-}
-
 /* User card */
 .topbar-account {
     display: flex;
@@ -1061,7 +1014,6 @@ hr { border-color: var(--line) !important; }
 }
 
 /* Keep every topbar icon at the same visual size. */
-.topbar-bell i,
 .st-key-theme_toggle > button i.pi,
 .st-key-theme_toggle > button::before,
 .st-key-user_management_toggle > button i.pi,
@@ -1480,7 +1432,7 @@ for key in STATUS_CONFIG:
 
 # ─── الشريط العلوي ─────────────────────────────────────────────────────────────
 with st.container(key="app_topbar"):
-    topbar_cols = st.columns([0.7, 2.55, 1.25, 1.65, 0.58, 0.58, 0.58, 0.95])
+    topbar_cols = st.columns([0.7, 2.55, 1.25, 1.65, 0.58, 0.58, 0.95])
 
     # ── الشعار ──────────────────────────────────────────────────────────────────
     with topbar_cols[0]:
@@ -1934,13 +1886,8 @@ body { background:transparent; overflow:hidden; }
                 st.session_state.dark_mode = not st.session_state.dark_mode
                 st.rerun()
 
-    # ── الإشعارات ───────────────────────────────────────────────────────────────
-    with topbar_cols[5]:
-        with st.container(key="topbar_bell_slot"):
-            st.markdown("<div class='topbar-bell' title='لا توجد إشعارات جديدة' aria-label='الإشعارات'><i class='pi pi-bell'></i></div>", unsafe_allow_html=True)
-
     # ── إدارة المستخدمين (للمدير فقط) ──────────────────────────────────────────
-    with topbar_cols[6]:
+    with topbar_cols[5]:
         with st.container(key="topbar_admin_slot"):
             if st.session_state.current_role == "admin":
                 if st.button("", key="user_management_toggle",
@@ -1951,7 +1898,7 @@ body { background:transparent; overflow:hidden; }
                     st.rerun()
 
     # ── تسجيل الخروج ────────────────────────────────────────────────────────────
-    with topbar_cols[7]:
+    with topbar_cols[6]:
         with st.container(key="topbar_logout_slot"):
             if st.button("خروج", key="topbar_logout",
                          help="تسجيل الخروج", type="secondary",
