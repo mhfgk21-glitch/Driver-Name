@@ -11,6 +11,8 @@ build/
 
 # Streamlit
 .streamlit/secrets.toml
+users.db
+*.db
 
 # OS
 .DS_Store

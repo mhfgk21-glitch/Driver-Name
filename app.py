@@ -10,6 +10,7 @@ import hashlib
 import hmac
 import json
 import secrets
+import sqlite3
 import time
 from io import BytesIO
 from datetime import date, datetime, timedelta
@@ -53,10 +54,51 @@ AUTH_USERS = {
     },
 }
 
-if "managed_users" not in st.session_state:
-    st.session_state.managed_users = {
-        username: dict(account) for username, account in AUTH_USERS.items()
+
+USERS_DB_PATH = os.getenv("APP_USERS_DB", "users.db")
+
+
+def load_managed_users() -> dict:
+    with sqlite3.connect(USERS_DB_PATH) as connection:
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                username TEXT PRIMARY KEY,
+                password TEXT NOT NULL,
+                role TEXT NOT NULL,
+                label TEXT NOT NULL
+            )
+        """)
+        for username, account in AUTH_USERS.items():
+            connection.execute(
+                """INSERT OR IGNORE INTO users (username, password, role, label)
+                   VALUES (?, ?, ?, ?)""",
+                (username, account["password"], account["role"], account["label"]),
+            )
+        rows = connection.execute(
+            "SELECT username, password, role, label FROM users"
+        ).fetchall()
+    return {
+        username: {"password": password, "role": role, "label": label}
+        for username, password, role, label in rows
     }
+
+
+def save_managed_user(username: str, account: dict) -> None:
+    with sqlite3.connect(USERS_DB_PATH) as connection:
+        connection.execute(
+            """INSERT OR REPLACE INTO users (username, password, role, label)
+               VALUES (?, ?, ?, ?)""",
+            (username, account["password"], account["role"], account["label"]),
+        )
+
+
+def delete_managed_user(username: str) -> None:
+    with sqlite3.connect(USERS_DB_PATH) as connection:
+        connection.execute("DELETE FROM users WHERE username = ?", (username,))
+
+
+if "managed_users" not in st.session_state:
+    st.session_state.managed_users = load_managed_users()
 
 SESSION_TTL_SECONDS = 12 * 60 * 60
 SESSION_SECRET = os.getenv("APP_SESSION_SECRET", "driver-number-session-secret")
@@ -1388,6 +1430,7 @@ if st.session_state.current_page == "user_management" and st.session_state.curre
                     "role": "employee",
                     "label": "موظف",
                 }
+                save_managed_user(clean_username, st.session_state.managed_users[clean_username])
                 st.success("تمت إضافة الموظف")
                 st.rerun()
 
@@ -1399,6 +1442,7 @@ if st.session_state.current_page == "user_management" and st.session_state.curre
             delete_user = st.selectbox("حذف موظف", removable_users, key="standalone_delete_user")
             if st.button("حذف المستخدم المحدد", key="standalone_delete_employee", type="secondary"):
                 del st.session_state.managed_users[delete_user]
+                delete_managed_user(delete_user)
                 st.success("تم حذف الموظف")
                 st.rerun()
     st.stop()
