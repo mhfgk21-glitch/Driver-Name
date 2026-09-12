@@ -11,7 +11,12 @@ import hmac
 import json
 import time
 from io import BytesIO
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+
+try:
+    import extra_streamlit_components as stx
+except ImportError:
+    stx = None
 
 # ─── إعدادات الصفحة ───────────────────────────────────────────────────────────
 st.set_page_config(
@@ -54,6 +59,8 @@ if "managed_users" not in st.session_state:
 
 SESSION_TTL_SECONDS = 12 * 60 * 60
 SESSION_SECRET = os.getenv("APP_SESSION_SECRET", "driver-number-session-secret")
+MAX_UPLOAD_SIZE_BYTES = 20 * 1024 * 1024
+cookie_manager = stx.CookieManager(key="session_cookie_manager") if stx else None
 
 
 def create_session_token(username: str, role: str) -> str:
@@ -72,7 +79,8 @@ def create_session_token(username: str, role: str) -> str:
 
 
 def restore_session_from_query() -> None:
-    token = st.query_params.get("auth")
+    cookies = cookie_manager.get_all() if cookie_manager else {}
+    token = st.query_params.get("auth") or cookies.get("auth")
     if not token or st.session_state.authenticated:
         return
 
@@ -97,6 +105,8 @@ def restore_session_from_query() -> None:
         st.session_state.current_role = payload["role"]
     except (KeyError, ValueError, TypeError, json.JSONDecodeError, UnicodeDecodeError):
         st.query_params.pop("auth", None)
+        if cookie_manager:
+            cookie_manager.delete("auth")
 
 
 restore_session_from_query()
@@ -1302,7 +1312,14 @@ if not st.session_state.authenticated:
             st.session_state.authenticated = True
             st.session_state.current_user = username.strip()
             st.session_state.current_role = account["role"]
-            st.query_params["auth"] = create_session_token(username.strip(), account["role"])
+            session_token = create_session_token(username.strip(), account["role"])
+            st.query_params["auth"] = session_token
+            if cookie_manager:
+                cookie_manager.set(
+                    "auth",
+                    session_token,
+                    expires_at=datetime.now() + timedelta(seconds=SESSION_TTL_SECONDS),
+                )
             st.rerun()
         st.error("بيانات الدخول غير صحيحة")
     st.stop()
@@ -1976,6 +1993,8 @@ body { background:transparent; overflow:hidden; }
                     st.session_state.show_user_management = False
                     st.session_state.current_page = "home"
                     st.query_params.pop("auth", None)
+                    if cookie_manager:
+                        cookie_manager.delete("auth")
                     st.rerun()
 
     # ── خيارات المعالجة المرفوعة للشريط العلوي ────────────────────────────────────
@@ -2032,6 +2051,9 @@ for i, status in enumerate(status_labels):
 
         if uploaded:
             try:
+                if uploaded.size > MAX_UPLOAD_SIZE_BYTES:
+                    st.error("حجم الملف يتجاوز الحد المسموح (20 ميجابايت).")
+                    continue
                 if uploaded.name.lower().endswith(".csv"):
                     df = pd.read_csv(uploaded)
                 else:
