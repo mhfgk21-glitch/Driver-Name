@@ -94,6 +94,7 @@ class DriverApp(ctk.CTk):
 
         self.btn_delivered = ctk.CTkButton(self.top_controls, text="📂 تم التسليم", font=self.font_main, height=45, fg_color="#27ae60", command=lambda: self.start_processing_thread("تم التسليم"))
         self.btn_delivered.grid(row=0, column=3, padx=5, pady=10, sticky="ew")
+        self.processing_buttons = (self.btn_delivery, self.btn_deferred, self.btn_returned, self.btn_delivered)
 
         self.progress_bar = ctk.CTkProgressBar(self, height=10)
         self.progress_bar.grid(row=4, column=0, padx=20, pady=5, sticky="ew")
@@ -212,12 +213,20 @@ class DriverApp(ctk.CTk):
     def start_processing_thread(self, status_type):
         file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx *.xls")])
         if file_path:
-            threading.Thread(target=self.process_excel, args=(file_path, status_type), daemon=True).start()
+            filter_enabled = self.date_filter_var.get()
+            start_date = self.start_date_picker.get_date()
+            end_date = self.end_date_picker.get_date()
+            for button in self.processing_buttons:
+                button.configure(state="disabled")
+            threading.Thread(
+                target=self.process_excel,
+                args=(file_path, status_type, filter_enabled, start_date, end_date),
+                daemon=True,
+            ).start()
 
-    def process_excel(self, file_path, status_type):
+    def process_excel(self, file_path, status_type, filter_enabled, start_date, end_date):
         try:
-            self.progress_bar.set(0)
-            self.progress_bar.start()
+            self.after(0, lambda: (self.progress_bar.set(0), self.progress_bar.start()))
             
             df = pd.read_excel(file_path)
             
@@ -248,13 +257,9 @@ class DriverApp(ctk.CTk):
                 return
 
             # فلترة التاريخ إذا كانت مفعلة
-            if self.date_filter_var.get() and col_date:
+            if filter_enabled and col_date:
                 try:
                     df[col_date] = pd.to_datetime(df[col_date])
-                    # الحصول على التاريخ من الـ DatePicker
-                    start_date = self.start_date_picker.get_date()
-                    end_date = self.end_date_picker.get_date()
-                    
                     start_val = pd.to_datetime(start_date)
                     end_val = pd.to_datetime(end_date).replace(hour=23, minute=59, second=59)
                     
@@ -276,8 +281,13 @@ class DriverApp(ctk.CTk):
         except Exception as e:
             self.after(0, lambda: messagebox.showerror("خطأ فني", f"حدث خطأ أثناء قراءة ملف {status_type}:\n{str(e)}"))
         finally:
-            self.after(0, self.progress_bar.stop)
-            self.after(0, lambda: self.progress_bar.set(1))
+            self.after(0, self._finish_processing)
+
+    def _finish_processing(self):
+        self.progress_bar.stop()
+        self.progress_bar.set(1)
+        for button in self.processing_buttons:
+            button.configure(state="normal")
 
     def update_combined_results(self):
         final_output = ""

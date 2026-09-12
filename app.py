@@ -1794,6 +1794,8 @@ body { background:transparent; overflow:hidden; }
 
     // القياس التلقائي الأولي
     checkNetwork();
+    // إعادة القياس دوريًا لتحديث حالة الشبكة دون تدخل المستخدم
+    setInterval(checkNetwork, 10000);
 })();
 </script>
 """, height=46)
