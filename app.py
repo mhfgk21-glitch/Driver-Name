@@ -2214,19 +2214,17 @@ body { background:transparent; overflow:hidden; }
                              use_container_width=True):
                     clear_uploaded_data()
     else:
-        opt_cols = st.columns([1.3, 1.6, 2.9, 1.2])
+        opt_cols = st.columns([1.3, 1.6, 5.1])
         with opt_cols[0]:
             use_date_filter = st.toggle("فلترة التاريخ", value=False, key="opt_date_filter")
             start_date = end_date = None
         with opt_cols[1]:
             merge_mode = st.toggle("دمج كل الحالات معاً", value=False, key="opt_merge_mode")
         with opt_cols[2]:
-            st.markdown("<div class='topbar-opt-hint'><i class='pi pi-info-circle'></i> <span>خيارات المعالجة: فلترة التواريخ ودمج الحالات المرفوعة تلقائياً</span></div>", unsafe_allow_html=True)
-        with opt_cols[3]:
             if st.session_state.current_role == "admin":
                 if st.button("مسح البيانات", key="opt_clear_all",
                              help="مسح جميع الجداول والبيانات المرفوعة", type="secondary",
-                             use_container_width=True):
+                             use_container_width=False):
                     clear_uploaded_data()
 
 

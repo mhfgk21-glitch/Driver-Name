@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 import customtkinter as ctk
 import pandas as pd
 from tkinter import filedialog, messagebox
@@ -7,6 +8,7 @@ import time
 import threading
 import sys
 from datetime import datetime
+# pyrefly: ignore [missing-import]
 from tkcalendar import DateEntry
 
 # الإعدادات العامة للواجهة
