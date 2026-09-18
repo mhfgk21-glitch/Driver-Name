@@ -1633,6 +1633,19 @@ def build_text_output(drivers_data: dict, title: str) -> str:
     return "\n".join(lines)
 
 
+def build_whatsapp_output(drivers_data: dict, title: str) -> str:
+    """مخرجات WhatsApp: اسم المندوب + كل كود في سطر + العدد"""
+    lines = [f"★ {title} ★", "=" * 22]
+    for name in sorted(drivers_data.keys()):
+        d = drivers_data[name]
+        lines.append(name)
+        for code in d["codes"]:
+            lines.append(code)
+        lines.append(str(d["count"]))
+        lines.append("-" * 15)
+    return "\n".join(lines)
+
+
 def render_copy_button(text: str, key: str) -> None:
     """عرض زر ينسخ النص إلى حافظة المستخدم."""
     import json
@@ -2198,7 +2211,7 @@ body { background:transparent; overflow:hidden; }
     st.markdown("<div class='topbar-subdivider'></div>", unsafe_allow_html=True)
 
     if st.session_state.get("opt_date_filter", False):
-        opt_cols = st.columns([1.3, 1.1, 1.1, 1.4, 1.1])
+        opt_cols = st.columns([1.3, 1.1, 1.1, 1.4, 1.4, 1.1])
         with opt_cols[0]:
             use_date_filter = st.toggle("فلترة التاريخ", key="opt_date_filter")
         with opt_cols[1]:
@@ -2208,19 +2221,23 @@ body { background:transparent; overflow:hidden; }
         with opt_cols[3]:
             merge_mode = st.toggle("دمج كل الحالات معاً", key="opt_merge_mode")
         with opt_cols[4]:
+            whatsapp_mode = st.toggle("مع كود البطاقة", key="opt_whatsapp_mode")
+        with opt_cols[5]:
             if st.session_state.current_role == "admin":
                 if st.button("مسح البيانات", key="opt_clear_all",
                              help="مسح جميع الجداول والبيانات المرفوعة", type="secondary",
                              use_container_width=True):
                     clear_uploaded_data()
     else:
-        opt_cols = st.columns([1.3, 1.6, 5.1])
+        opt_cols = st.columns([1.3, 1.6, 1.6, 3.5])
         with opt_cols[0]:
             use_date_filter = st.toggle("فلترة التاريخ", value=False, key="opt_date_filter")
             start_date = end_date = None
         with opt_cols[1]:
             merge_mode = st.toggle("دمج كل الحالات معاً", value=False, key="opt_merge_mode")
         with opt_cols[2]:
+            whatsapp_mode = st.toggle("مع كود البطاقة", value=False, key="opt_whatsapp_mode")
+        with opt_cols[3]:
             if st.session_state.current_role == "admin":
                 if st.button("مسح البيانات", key="opt_clear_all",
                              help="مسح جميع الجداول والبيانات المرفوعة", type="secondary",
@@ -2331,6 +2348,8 @@ if has_data:
 
     # ── Tab 1: النتائج النصية ────────────────────────────────────────────────
     with tab_results:
+        _builder = build_whatsapp_output if whatsapp_mode else build_text_output
+
         if merge_mode:
             # دمج شامل
             combined: dict = {}
@@ -2346,7 +2365,7 @@ if has_data:
             if search_query:
                 combined = {k: v for k, v in combined.items() if search_query.lower() in k.lower()}
 
-            text_output = build_text_output(combined, "نتائج المندوبين (دمج كامل)")
+            text_output = _builder(combined, "نتائج المندوبين (دمج كامل)")
 
             col_txt, col_btn = st.columns([5, 1])
             with col_btn:
@@ -2369,7 +2388,7 @@ if has_data:
                     filtered = {k: v for k, v in data.items() if search_query.lower() in k.lower()}
 
                 with st.expander(f"{status} — {sum(d['count'] for d in filtered.values())} طلب | {len(filtered)} مندوب", expanded=True):
-                    text_output = build_text_output(filtered, status)
+                    text_output = _builder(filtered, status)
                     col_txt, col_btn = st.columns([5, 1])
                     with col_btn:
                         st.download_button("تنزيل", text_output, f"{status}.txt", "text/plain",
@@ -2495,6 +2514,7 @@ if has_data:
 
         with exp_cols[0]:
             st.markdown("<div class='upload-label'><i class='pi pi-file-edit'></i><span>تصدير النص الكامل</span></div>", unsafe_allow_html=True)
+            _exp_builder = build_whatsapp_output if whatsapp_mode else build_text_output
             full_text = ""
             if merge_mode:
                 combined_all: dict = {}
@@ -2505,11 +2525,11 @@ if has_data:
                                 combined_all[name] = {"codes": [], "count": 0}
                             combined_all[name]["codes"].extend(info["codes"])
                             combined_all[name]["count"] += info["count"]
-                full_text = build_text_output(combined_all, "نتائج المندوبين")
+                full_text = _exp_builder(combined_all, "نتائج المندوبين")
             else:
                 for status, data in all_processed.items():
                     if data:
-                        full_text += build_text_output(data, status) + "\n\n"
+                        full_text += _exp_builder(data, status) + "\n\n"
 
             st.download_button(
                 "تنزيل TXT",
