@@ -5,6 +5,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import os
+import re
 import base64
 import hashlib
 import hmac
@@ -1611,14 +1612,44 @@ def filter_by_date(df, col_date, start_date, end_date):
 
 
 @st.cache_data
-def process_df(df, col_driver, col_code):
-    """إرجاع dict: اسم المندوب → {codes, count}"""
+def process_df(df, col_driver, col_code, col_date=None):
+    """إرجاع dict: اسم المندوب → {codes, entries, count}"""
     result = {}
     for driver_name, group in df.groupby(col_driver):
         codes = []
-        if col_code:
-            codes = [str(c) for c in group[col_code].tolist() if str(c).lower() != 'nan']
-        result[str(driver_name)] = {"codes": codes, "count": len(group)}
+        entries = []
+        code_series = group[col_code].tolist() if col_code and col_code in group.columns else [None] * len(group)
+        date_series = group[col_date].tolist() if col_date and col_date in group.columns else [None] * len(group)
+
+        for c, d in zip(code_series, date_series):
+            c_str = ""
+            if c is not None and str(c).strip() and str(c).lower() not in ('nan', 'none'):
+                c_str = str(c).strip()
+                if c_str.endswith(".0"):
+                    c_str = c_str[:-2]
+                codes.append(c_str)
+
+            d_str = ""
+            if d is not None and str(d).strip() and str(d).lower() not in ('nan', 'none', 'nat'):
+                val = str(d).strip()
+                m = re.search(r'\d{4}-\d{2}-\d{2}', val)
+                if m:
+                    d_str = m.group(0)
+                else:
+                    d_str = val.split()[0]
+
+            if c_str and d_str:
+                entries.append(f"{c_str} | {d_str}")
+            elif c_str:
+                entries.append(c_str)
+            elif d_str:
+                entries.append(d_str)
+
+        result[str(driver_name)] = {
+            "codes": codes,
+            "entries": entries if entries else codes,
+            "count": len(group)
+        }
     return result
 
 
@@ -1634,14 +1665,22 @@ def build_text_output(drivers_data: dict, title: str) -> str:
 
 
 def build_whatsapp_output(drivers_data: dict, title: str) -> str:
-    """مخرجات WhatsApp: اسم المندوب + كل كود في سطر (بدون عدد ولا فواصل)"""
-    lines = []
-    for name in sorted(drivers_data.keys()):
+    """مخرجات خيار مع كود البطاقة:
+    كود | تاريخ (لكل طلب)
+    اسم المندوب في الأسفل
+    خط فاصل بين المندوبين
+    """
+    output_lines = []
+    names = sorted(drivers_data.keys())
+    for i, name in enumerate(names):
         d = drivers_data[name]
-        lines.append(name)
-        for code in d["codes"]:
-            lines.append(code)
-    return "\n".join(lines)
+        items = d.get("entries") if d.get("entries") else d.get("codes", [])
+        for item in items:
+            output_lines.append(str(item))
+        output_lines.append(str(name))
+        if i < len(names) - 1:
+            output_lines.append("─" * 15)
+    return "\n".join(output_lines)
 
 
 def render_copy_button(text: str, key: str) -> None:
@@ -2277,7 +2316,7 @@ for i, status in enumerate(status_labels):
                             st.warning("لا بيانات في النطاق الزمني!")
                         else:
                             st.session_state[f"raw_{status}"]  = df
-                            st.session_state[f"data_{status}"] = process_df(df, col_driver, col_code)
+                            st.session_state[f"data_{status}"] = process_df(df, col_driver, col_code, col_date)
                             st.success(f"تم تحميل {len(df)} سطر")
             except Exception as e:
                 st.error(f"خطأ: {e}")
@@ -2355,8 +2394,9 @@ if has_data:
                 if data:
                     for name, info in data.items():
                         if name not in combined:
-                            combined[name] = {"codes": [], "count": 0}
+                            combined[name] = {"codes": [], "entries": [], "count": 0}
                         combined[name]["codes"].extend(info["codes"])
+                        combined[name]["entries"].extend(info.get("entries", info["codes"]))
                         combined[name]["count"] += info["count"]
 
             # تطبيق البحث
@@ -2520,8 +2560,9 @@ if has_data:
                     if data:
                         for name, info in data.items():
                             if name not in combined_all:
-                                combined_all[name] = {"codes": [], "count": 0}
+                                combined_all[name] = {"codes": [], "entries": [], "count": 0}
                             combined_all[name]["codes"].extend(info["codes"])
+                            combined_all[name]["entries"].extend(info.get("entries", info["codes"]))
                             combined_all[name]["count"] += info["count"]
                 full_text = _exp_builder(combined_all, "نتائج المندوبين")
             else:

@@ -220,14 +220,24 @@ def convert_text():
         if entry_parts:
             grouped_data[name].append(entry_parts)
     
-    # بناء النتيجة - كود البطاقة فقط (بدون تاريخ، بدون اسم، بدون فاصل)
+    # بناء النتيجة
     output_lines = []
     for i, (name, entries) in enumerate(grouped_data.items()):
+        # كتابة جميع الأكواد والأوقات وحساب أطول سطر
+        max_data_length = 0
         for entry in entries:
-            # استخراج كود البطاقة فقط (أول عنصر إذا كان كوداً)
-            if entry:
-                code_value = entry[0]  # كود البطاقة دائماً أول عنصر
-                output_lines.append(code_value)
+            joined = separator.join(entry)
+            output_lines.append(joined)
+            max_data_length = max(max_data_length, len(joined))
+        
+        # كتابة الاسم في الأسفل
+        output_lines.append(name)
+        
+        # خط فاصل صغير ومرتب
+        if i < len(grouped_data) - 1:
+            output_lines.append("─" * 15)
+        else:
+            output_lines.append("")  # سطر فارغ في النهاية فقط
     
     result = "\n".join(output_lines)
 
