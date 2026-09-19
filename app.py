@@ -2,7 +2,9 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
+# pyrefly: ignore [missing-import]
 import plotly.express as px
+# pyrefly: ignore [missing-import]
 import plotly.graph_objects as go
 import os
 import re
@@ -1587,18 +1589,247 @@ POSSIBLE_DRIVER_COLS = ['drivername', 'اسم المندوب', 'المندوب',
 POSSIBLE_CODE_COLS   = ['code', 'كود', 'رقم الطلب', 'id', 'رقم كود']
 POSSIBLE_DATE_COLS   = ['created_at', 'التاريخ', 'تاريخ الطلب', 'date', 'تاريخ']
 
+# ==================== نظام الذكاء الاصطناعي للتعرف على الأعمدة ====================
+
+def is_code_column(value):
+    """فحص إذا كانت القيمة تبدو كأنها كود (رقم طويل)"""
+    if value is None:
+        return False
+    clean = str(value).strip()
+    if clean.endswith(".0"):
+        clean = clean[:-2]
+    return clean.isdigit() and len(clean) >= 8
+
+
+def is_datetime_column(value):
+    """فحص إذا كانت القيمة تبدو كأنها تاريخ/وقت"""
+    if value is None:
+        return False
+    datetime_patterns = [
+        r'\d{4}-\d{2}-\d{2}',
+        r'\d{2}/\d{2}/\d{4}',
+        r'\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}',
+        r'\d{2}:\d{2}:\d{2}',
+        r'\d{2}:\d{2}',
+    ]
+    val_str = str(value).strip()
+    for pattern in datetime_patterns:
+        if re.search(pattern, val_str):
+            return True
+    return False
+
+
+def is_name_column(value):
+    """فحص إذا كانت القيمة تبدو كأنها اسم (نص عربي أو إنجليزي)"""
+    if value is None:
+        return False
+    clean = str(value).strip()
+    has_arabic = bool(re.search(r'[\u0600-\u06FF]', clean))
+    has_english = bool(re.search(r'[a-zA-Z]', clean))
+    has_spaces = ' ' in clean or '-' in clean
+    return (has_arabic or has_english) and (has_spaces or len(clean.split()) > 1 or '-' in clean)
+
+
+def detect_column_type(sample_values):
+    """
+    تحليل عينة من القيم لتحديد نوع العمود
+    Returns: 'code', 'name', 'datetime', or 'unknown'
+    """
+    if not sample_values:
+        return 'unknown'
+    sample_values = [str(v).strip() for v in sample_values if v is not None and str(v).strip() and str(v).lower() not in ('nan', 'none', 'nat')]
+    if not sample_values:
+        return 'unknown'
+    code_score = sum(1 for v in sample_values if is_code_column(v))
+    datetime_score = sum(1 for v in sample_values if is_datetime_column(v))
+    name_score = sum(1 for v in sample_values if is_name_column(v))
+    total = len(sample_values)
+    threshold = 0.7
+    if code_score / total >= threshold:
+        return 'code'
+    elif datetime_score / total >= threshold:
+        return 'datetime'
+    elif name_score / total >= threshold:
+        return 'name'
+    else:
+        return 'unknown'
+
+
+def extract_date_only(datetime_str):
+    """استخراج التاريخ فقط وحذف الوقت"""
+    if not datetime_str:
+        return str(datetime_str) if datetime_str is not None else ""
+    match = re.search(r'\d{4}-\d{2}-\d{2}', str(datetime_str))
+    if match:
+        return match.group(0)
+    return str(datetime_str).strip()
+
+
+def auto_detect_columns(lines, max_samples=10):
+    """
+    الكشف التلقائي عن أنواع الأعمدة من البيانات
+    Returns: dict with column indices and their types
+    """
+    if not lines:
+        return {}
+
+    # أخذ عينة من الأسطر للتحليل
+    sample_lines = lines[:min(max_samples, len(lines))]
+
+    # تحليل كل عمود
+    column_data = {}
+
+    for line in sample_lines:
+        parts = line.split("\t") if "\t" in line else [p.strip() for p in re.split(r'[,|;]', line)]
+        for i, part in enumerate(parts):
+            if i not in column_data:
+                column_data[i] = []
+            column_data[i].append(part.strip())
+
+    # تحديد نوع كل عمود
+    column_types = {}
+    for col_idx, values in column_data.items():
+        col_type = detect_column_type(values)
+        column_types[col_idx] = col_type
+
+    return column_types
+
+
+def convert_raw_text(text: str, separator: str = " | ") -> tuple[str, dict]:
+    """
+    معالجة النص المنسوخ وتحويله بصيغة مع البطاقة باحترافية وتوافق تام
+    """
+    if not text or not text.strip():
+        return "", {"status": "empty", "message": "⚠️ الرجاء إدخال بيانات!"}
+
+    lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
+    if not lines:
+        return "", {"status": "empty", "message": "⚠️ الرجاء إدخال بيانات صالحة!"}
+
+    # 🤖 الكشف التلقائي الذكي عن أنواع الأعمدة
+    column_types = auto_detect_columns(lines)
+
+    code_col = None
+    name_col = None
+    datetime_col = None
+
+    for col_idx, col_type in column_types.items():
+        if col_type == 'code' and code_col is None:
+            code_col = col_idx
+        elif col_type == 'name' and name_col is None:
+            name_col = col_idx
+        elif col_type == 'datetime' and datetime_col is None:
+            datetime_col = col_idx
+
+    # إذا لم يتم الكشف عن الاسم، نستخدم الطريقة التقليدية (العمود الثاني)
+    if name_col is None:
+        name_col = 1 if len(column_types) > 1 else 0
+
+    detected_parts = []
+    if code_col is not None:
+        detected_parts.append(f"كود[{code_col}]")
+    if name_col is not None:
+        detected_parts.append(f"اسم[{name_col}]")
+    if datetime_col is not None:
+        detected_parts.append(f"تاريخ[{datetime_col}]")
+    detected_info = "🤖 تم الكشف: " + (" ".join(detected_parts) if detected_parts else "تلقائي")
+
+    grouped_data = {}
+    structured_drivers = {}
+
+    for line in lines:
+        parts = line.split("\t") if "\t" in line else [p.strip() for p in re.split(r'[,|;]', line)]
+        parts = [p.strip() for p in parts]
+
+        if not parts:
+            continue
+
+        name = parts[name_col] if name_col < len(parts) else ""
+        if not name:
+            continue
+
+        entry_parts = []
+        c_val = ""
+        d_val = ""
+
+        if code_col is not None and code_col < len(parts):
+            c_val = parts[code_col]
+            if c_val.endswith(".0"):
+                c_val = c_val[:-2]
+            if c_val:
+                entry_parts.append(c_val)
+
+        if datetime_col is not None and datetime_col < len(parts):
+            d_val = extract_date_only(parts[datetime_col])
+            if d_val:
+                entry_parts.append(d_val)
+
+        if not entry_parts:
+            entry_parts = [p for i, p in enumerate(parts) if i != name_col and p]
+
+        if name not in grouped_data:
+            grouped_data[name] = []
+            structured_drivers[name] = {"codes": [], "entries": [], "count": 0}
+
+        if entry_parts:
+            grouped_data[name].append(entry_parts)
+            joined_entry = separator.join(entry_parts)
+            structured_drivers[name]["entries"].append(joined_entry)
+            if c_val:
+                structured_drivers[name]["codes"].append(c_val)
+            structured_drivers[name]["count"] += 1
+
+    # بناء النتيجة - كود البطاقة والتاريخ لكل طلب، ثم اسم المندوب، ثم فاصل
+    output_lines = []
+    for i, (name, entries) in enumerate(grouped_data.items()):
+        for entry in entries:
+            joined = separator.join(entry)
+            output_lines.append(joined)
+        output_lines.append(name)
+        if i < len(grouped_data) - 1:
+            output_lines.append("─" * 15)
+        else:
+            output_lines.append("")
+
+    result = "\n".join(output_lines)
+    meta = {
+        "status": "success",
+        "detected_info": detected_info,
+        "total_names": len(grouped_data),
+        "total_entries": sum(len(e) for e in grouped_data.values()),
+        "structured_drivers": structured_drivers
+    }
+    return result, meta
+
+
 # ─── دوال مساعدة ──────────────────────────────────────────────────────────────
 @st.cache_data
 def detect_columns(df: pd.DataFrame):
     col_driver = col_code = col_date = None
+    
+    # 1. محاولة التعرف عبر أسماء الأعمدة المعتادة
     for col in df.columns:
         col_str = str(col).lower()
-        if any(p in col_str for p in POSSIBLE_DRIVER_COLS):
+        if any(p in col_str for p in POSSIBLE_DRIVER_COLS) and not col_driver:
             col_driver = col
-        if any(p in col_str for p in POSSIBLE_CODE_COLS):
+        if any(p in col_str for p in POSSIBLE_CODE_COLS) and not col_code:
             col_code = col
-        if any(p in col_str for p in POSSIBLE_DATE_COLS):
+        if any(p in col_str for p in POSSIBLE_DATE_COLS) and not col_date:
             col_date = col
+
+    # 2. الكشف الذكي بتحليل عينات البيانات للأعمدة المتبقية
+    if not col_driver or not col_code or not col_date:
+        sample_df = df.head(15)
+        for col in df.columns:
+            samples = sample_df[col].dropna().tolist()
+            ctype = detect_column_type(samples)
+            if ctype == 'name' and not col_driver:
+                col_driver = col
+            elif ctype == 'code' and not col_code:
+                col_code = col
+            elif ctype == 'datetime' and not col_date:
+                col_date = col
+
     return col_driver, col_code, col_date
 
 
@@ -1631,12 +1862,7 @@ def process_df(df, col_driver, col_code, col_date=None):
 
             d_str = ""
             if d is not None and str(d).strip() and str(d).lower() not in ('nan', 'none', 'nat'):
-                val = str(d).strip()
-                m = re.search(r'\d{4}-\d{2}-\d{2}', val)
-                if m:
-                    d_str = m.group(0)
-                else:
-                    d_str = val.split()[0]
+                d_str = extract_date_only(d)
 
             if c_str and d_str:
                 entries.append(f"{c_str} | {d_str}")
@@ -1664,8 +1890,8 @@ def build_text_output(drivers_data: dict, title: str) -> str:
     return "\n".join(lines)
 
 
-def build_whatsapp_output(drivers_data: dict, title: str) -> str:
-    """مخرجات خيار مع كود البطاقة:
+def build_whatsapp_output(drivers_data: dict, title: str = "") -> str:
+    """مخرجات خيار مع البطاقة:
     كود | تاريخ (لكل طلب)
     اسم المندوب في الأسفل
     خط فاصل بين المندوبين
@@ -1680,6 +1906,8 @@ def build_whatsapp_output(drivers_data: dict, title: str) -> str:
         output_lines.append(str(name))
         if i < len(names) - 1:
             output_lines.append("─" * 15)
+        else:
+            output_lines.append("")
     return "\n".join(output_lines)
 
 
@@ -2258,7 +2486,7 @@ body { background:transparent; overflow:hidden; }
         with opt_cols[3]:
             merge_mode = st.toggle("دمج كل الحالات معاً", key="opt_merge_mode")
         with opt_cols[4]:
-            whatsapp_mode = st.toggle("مع كود البطاقة", key="opt_whatsapp_mode")
+            whatsapp_mode = st.toggle("مع البطاقة", key="opt_whatsapp_mode", help="مخرجات كود البطاقة والتاريخ لكل طلب مع اسم المندوب في الأسفل")
         with opt_cols[5]:
             if st.session_state.current_role == "admin":
                 if st.button("مسح البيانات", key="opt_clear_all",
@@ -2273,7 +2501,7 @@ body { background:transparent; overflow:hidden; }
         with opt_cols[1]:
             merge_mode = st.toggle("دمج كل الحالات معاً", value=False, key="opt_merge_mode")
         with opt_cols[2]:
-            whatsapp_mode = st.toggle("مع كود البطاقة", value=False, key="opt_whatsapp_mode")
+            whatsapp_mode = st.toggle("مع البطاقة", value=False, key="opt_whatsapp_mode", help="مخرجات كود البطاقة والتاريخ لكل طلب مع اسم المندوب في الأسفل")
         with opt_cols[3]:
             if st.session_state.current_role == "admin":
                 if st.button("مسح البيانات", key="opt_clear_all",
@@ -2320,6 +2548,39 @@ for i, status in enumerate(status_labels):
                             st.success(f"تم تحميل {len(df)} سطر")
             except Exception as e:
                 st.error(f"خطأ: {e}")
+
+st.divider()
+
+# ─── بطاقة التحويل السريع المباشر (نسخ ولصق مع البطاقة) ─────────────────────────
+with st.expander("⚡ بطاقة التحويل السريع المباشر (نسخ ولصق ذكي مع البطاقة)", expanded=False):
+    st.markdown("<p style='color:var(--text-secondary);font-size:14px;margin-bottom:12px'>الصق أسطر البيانات المنسوخة مباشرة من Excel أو أي جدول، وسيقوم نظام الذكاء الاصطناعي بالتعرف التلقائي على أعمدة (الكود، الاسم، التاريخ) وتنسيقها فوراً بنظام مع البطاقة.</p>", unsafe_allow_html=True)
+    paste_c1, paste_c2 = st.columns([3, 1])
+    with paste_c1:
+        raw_input_text = st.text_area("البيانات المدخلة", height=155, placeholder="الصق هنا أسطر البيانات المنسوخة (مثال: بيانات Excel مفصولة بـ TAB)...", key="txt_direct_paste", label_visibility="collapsed")
+    with paste_c2:
+        sep_choice = st.text_input("فاصل الحقول", value=" | ", key="txt_direct_sep", help="الفاصل بين كود الطلب والتاريخ")
+        target_status = st.selectbox("تعيين إلى حالة (اختياري)", ["معاينة فقط (بدون تعيين)", "قيد التوصيل", "المؤجل", "الراجع", "تم التسليم"], key="txt_target_status")
+        btn_convert = st.button("🚀 تحويل ذكي مع البطاقة", type="primary", use_container_width=True)
+
+    if btn_convert and raw_input_text.strip():
+        converted_res, meta = convert_raw_text(raw_input_text, separator=sep_choice)
+        if meta["status"] == "success":
+            st.success(f"{meta['detected_info']} | {meta['total_names']} مندوب، {meta['total_entries']} طلب")
+
+            # إذا اختار المستخدم تعيين البيانات لحالة من الحالات في لوحة التحكم
+            if target_status != "معاينة فقط (بدون تعيين)":
+                st.session_state[f"data_{target_status}"] = meta["structured_drivers"]
+                st.toast(f"تم إدراج البيانات بنجاح في قسم '{target_status}'", icon="✅")
+                st.rerun()
+
+            col_res_txt, col_res_btn = st.columns([5, 1])
+            with col_res_btn:
+                st.download_button("تنزيل النتيجة", converted_res, "card_result.txt", "text/plain", use_container_width=True)
+                render_copy_button(converted_res, "direct_card_paste")
+            with col_res_txt:
+                st.markdown(f'<div class="result-box">{converted_res.replace(chr(10), "<br>")}</div>', unsafe_allow_html=True)
+        else:
+            st.warning(meta["message"])
 
 st.divider()
 
