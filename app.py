@@ -1634,15 +1634,13 @@ def build_text_output(drivers_data: dict, title: str) -> str:
 
 
 def build_whatsapp_output(drivers_data: dict, title: str) -> str:
-    """مخرجات WhatsApp: اسم المندوب + كل كود في سطر + العدد"""
-    lines = [f"★ {title} ★", "=" * 22]
+    """مخرجات WhatsApp: اسم المندوب + كل كود في سطر (بدون عدد ولا فواصل)"""
+    lines = []
     for name in sorted(drivers_data.keys()):
         d = drivers_data[name]
         lines.append(name)
         for code in d["codes"]:
             lines.append(code)
-        lines.append(str(d["count"]))
-        lines.append("-" * 15)
     return "\n".join(lines)
 
 
