@@ -1779,17 +1779,14 @@ def convert_raw_text(text: str, separator: str = " | ") -> tuple[str, dict]:
                 structured_drivers[name]["codes"].append(c_val)
             structured_drivers[name]["count"] += 1
 
-    # بناء النتيجة - كود البطاقة والتاريخ لكل طلب، ثم اسم المندوب، ثم فاصل
+    # بناء النتيجة - اسم المندوب في الأعلى، ثم خط فاصل، ثم كود البطاقة والتاريخ لكل طلب
     output_lines = []
-    for i, (name, entries) in enumerate(grouped_data.items()):
+    for name, entries in grouped_data.items():
+        output_lines.append(name)
+        output_lines.append("─" * 15)
         for entry in entries:
             joined = separator.join(entry)
             output_lines.append(joined)
-        output_lines.append(name)
-        if i < len(grouped_data) - 1:
-            output_lines.append("─" * 15)
-        else:
-            output_lines.append("")
 
     result = "\n".join(output_lines)
     meta = {
@@ -1892,22 +1889,19 @@ def build_text_output(drivers_data: dict, title: str) -> str:
 
 def build_whatsapp_output(drivers_data: dict, title: str = "") -> str:
     """مخرجات خيار مع البطاقة:
+    اسم المندوب في الأعلى
+    خط فاصل تحته
     كود | تاريخ (لكل طلب)
-    اسم المندوب في الأسفل
-    خط فاصل بين المندوبين
     """
     output_lines = []
     names = sorted(drivers_data.keys())
-    for i, name in enumerate(names):
+    for name in names:
         d = drivers_data[name]
+        output_lines.append(str(name))
+        output_lines.append("─" * 15)
         items = d.get("entries") if d.get("entries") else d.get("codes", [])
         for item in items:
             output_lines.append(str(item))
-        output_lines.append(str(name))
-        if i < len(names) - 1:
-            output_lines.append("─" * 15)
-        else:
-            output_lines.append("")
     return "\n".join(output_lines)
 
 
@@ -2486,7 +2480,7 @@ body { background:transparent; overflow:hidden; }
         with opt_cols[3]:
             merge_mode = st.toggle("دمج كل الحالات معاً", key="opt_merge_mode")
         with opt_cols[4]:
-            whatsapp_mode = st.toggle("مع البطاقة", key="opt_whatsapp_mode", help="مخرجات كود البطاقة والتاريخ لكل طلب مع اسم المندوب في الأسفل")
+            whatsapp_mode = st.toggle("مع البطاقة", key="opt_whatsapp_mode", help="مخرجات اسم المندوب في الأعلى ثم كود البطاقة والتاريخ لكل طلب")
         with opt_cols[5]:
             if st.session_state.current_role == "admin":
                 if st.button("مسح البيانات", key="opt_clear_all",
@@ -2501,7 +2495,7 @@ body { background:transparent; overflow:hidden; }
         with opt_cols[1]:
             merge_mode = st.toggle("دمج كل الحالات معاً", value=False, key="opt_merge_mode")
         with opt_cols[2]:
-            whatsapp_mode = st.toggle("مع البطاقة", value=False, key="opt_whatsapp_mode", help="مخرجات كود البطاقة والتاريخ لكل طلب مع اسم المندوب في الأسفل")
+            whatsapp_mode = st.toggle("مع البطاقة", value=False, key="opt_whatsapp_mode", help="مخرجات اسم المندوب في الأعلى ثم كود البطاقة والتاريخ لكل طلب")
         with opt_cols[3]:
             if st.session_state.current_role == "admin":
                 if st.button("مسح البيانات", key="opt_clear_all",
