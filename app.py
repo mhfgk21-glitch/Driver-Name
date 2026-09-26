@@ -2546,40 +2546,8 @@ for i, status in enumerate(status_labels):
             except Exception as e:
                 st.error(f"خطأ: {e}")
 
-st.divider()
 
-# ─── بطاقة التحويل السريع المباشر (نسخ ولصق مع كود البطاقة) ─────────────────────────
-with st.expander("⚡ بطاقة التحويل السريع المباشر (نسخ ولصق ذكي مع كود البطاقة)", expanded=False):
-    st.markdown("<p style='color:var(--text-secondary);font-size:14px;margin-bottom:12px'>الصق أسطر البيانات المنسوخة مباشرة من Excel أو أي جدول، وسيقوم نظام الذكاء الاصطناعي بالتعرف التلقائي على أعمدة (الكود، الاسم، التاريخ) وتنسيقها فوراً بنظام مع كود البطاقة.</p>", unsafe_allow_html=True)
-    paste_c1, paste_c2 = st.columns([3, 1])
-    with paste_c1:
-        raw_input_text = st.text_area("البيانات المدخلة", height=155, placeholder="الصق هنا أسطر البيانات المنسوخة (مثال: بيانات Excel مفصولة بـ TAB)...", key="txt_direct_paste", label_visibility="collapsed")
-    with paste_c2:
-        sep_choice = st.text_input("فاصل الحقول", value=" | ", key="txt_direct_sep", help="الفاصل بين كود الطلب والتاريخ")
-        target_status = st.selectbox("تعيين إلى حالة (اختياري)", ["معاينة فقط (بدون تعيين)", "قيد التوصيل", "المؤجل", "الراجع", "تم التسليم"], key="txt_target_status")
-        btn_convert = st.button("🚀 تحويل ذكي مع كود البطاقة", type="primary", use_container_width=True)
 
-    if btn_convert and raw_input_text.strip():
-        converted_res, meta = convert_raw_text(raw_input_text, separator=sep_choice)
-        if meta["status"] == "success":
-            st.success(f"{meta['detected_info']} | {meta['total_names']} مندوب، {meta['total_entries']} طلب")
-
-            # إذا اختار المستخدم تعيين البيانات لحالة من الحالات في لوحة التحكم
-            if target_status != "معاينة فقط (بدون تعيين)":
-                st.session_state[f"data_{target_status}"] = meta["structured_drivers"]
-                st.toast(f"تم إدراج البيانات بنجاح في قسم '{target_status}'", icon="✅")
-                st.rerun()
-
-            col_res_txt, col_res_btn = st.columns([5, 1])
-            with col_res_btn:
-                st.download_button("تنزيل النتيجة", converted_res, "card_result.txt", "text/plain", use_container_width=True)
-                render_copy_button(converted_res, "direct_card_paste")
-            with col_res_txt:
-                st.markdown(f'<div class="result-box">{converted_res.replace(chr(10), "<br>")}</div>', unsafe_allow_html=True)
-        else:
-            st.warning(meta["message"])
-
-st.divider()
 
 # ─── جمع البيانات المتاحة ─────────────────────────────────────────────────────
 all_processed = {s: st.session_state[f"data_{s}"] for s in STATUS_CONFIG}
