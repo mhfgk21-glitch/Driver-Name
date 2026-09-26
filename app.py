@@ -104,7 +104,8 @@ def clear_uploaded_data() -> None:
     if st.session_state.current_role != "admin":
         st.warning("صلاحية مسح البيانات متاحة لمدير النظام فقط.")
         return
-    for key in STATUS_CONFIG:
+    _statuses = ["قيد التوصيل", "المؤجل", "الراجع", "تم التسليم"]
+    for key in _statuses:
         st.session_state[f"data_{key}"] = None
         st.session_state[f"raw_{key}"] = None
     st.rerun()
