@@ -330,9 +330,6 @@ class DriverApp(ctk.CTk):
                     output_lines = [f"★ {status} ★", "=" * 20]
                     for driver_name, group in df.groupby(col_driver):
                         output_lines.append(f"{driver_name}")
-                        if col_code:
-                            codes = [str(c) for c in group[col_code].tolist() if str(c).lower() != 'nan']
-                            output_lines.extend(codes)
                         output_lines.append(f"{len(group)}")
                         output_lines.append("-" * 15)
                         total_drivers_names.add(driver_name)
