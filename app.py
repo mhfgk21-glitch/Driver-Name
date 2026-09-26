@@ -1779,14 +1779,17 @@ def convert_raw_text(text: str, separator: str = " | ") -> tuple[str, dict]:
                 structured_drivers[name]["codes"].append(c_val)
             structured_drivers[name]["count"] += 1
 
-    # بناء النتيجة - اسم المندوب في الأعلى، ثم خط فاصل، ثم كود البطاقة والتاريخ لكل طلب
+    # بناء النتيجة - كود البطاقة والتاريخ لكل طلب، ثم اسم المندوب في الأسفل، ثم خط فاصل بين المندوبين
     output_lines = []
-    for name, entries in grouped_data.items():
-        output_lines.append(name)
-        output_lines.append("─" * 15)
+    names_list = list(grouped_data.keys())
+    for i, name in enumerate(names_list):
+        entries = grouped_data[name]
         for entry in entries:
             joined = separator.join(entry)
             output_lines.append(joined)
+        output_lines.append(name)
+        if i < len(names_list) - 1:
+            output_lines.append("─" * 15)
 
     result = "\n".join(output_lines)
     meta = {
@@ -1888,20 +1891,21 @@ def build_text_output(drivers_data: dict, title: str) -> str:
 
 
 def build_whatsapp_output(drivers_data: dict, title: str = "") -> str:
-    """مخرجات خيار مع البطاقة:
-    اسم المندوب في الأعلى
-    خط فاصل تحته
+    """مخرجات خيار مع كود البطاقة:
     كود | تاريخ (لكل طلب)
+    اسم المندوب في الأسفل
+    خط فاصل بين المندوبين
     """
     output_lines = []
     names = sorted(drivers_data.keys())
-    for name in names:
+    for i, name in enumerate(names):
         d = drivers_data[name]
-        output_lines.append(str(name))
-        output_lines.append("─" * 15)
         items = d.get("entries") if d.get("entries") else d.get("codes", [])
         for item in items:
             output_lines.append(str(item))
+        output_lines.append(str(name))
+        if i < len(names) - 1:
+            output_lines.append("─" * 15)
     return "\n".join(output_lines)
 
 
@@ -2480,7 +2484,7 @@ body { background:transparent; overflow:hidden; }
         with opt_cols[3]:
             merge_mode = st.toggle("دمج كل الحالات معاً", key="opt_merge_mode")
         with opt_cols[4]:
-            whatsapp_mode = st.toggle("مع البطاقة", key="opt_whatsapp_mode", help="مخرجات اسم المندوب في الأعلى ثم كود البطاقة والتاريخ لكل طلب")
+            whatsapp_mode = st.toggle("مع كود البطاقة", key="opt_whatsapp_mode", help="مخرجات كود البطاقة والتاريخ لكل طلب مع اسم المندوب في الأسفل")
         with opt_cols[5]:
             if st.session_state.current_role == "admin":
                 if st.button("مسح البيانات", key="opt_clear_all",
@@ -2495,7 +2499,7 @@ body { background:transparent; overflow:hidden; }
         with opt_cols[1]:
             merge_mode = st.toggle("دمج كل الحالات معاً", value=False, key="opt_merge_mode")
         with opt_cols[2]:
-            whatsapp_mode = st.toggle("مع البطاقة", value=False, key="opt_whatsapp_mode", help="مخرجات اسم المندوب في الأعلى ثم كود البطاقة والتاريخ لكل طلب")
+            whatsapp_mode = st.toggle("مع كود البطاقة", value=False, key="opt_whatsapp_mode", help="مخرجات كود البطاقة والتاريخ لكل طلب مع اسم المندوب في الأسفل")
         with opt_cols[3]:
             if st.session_state.current_role == "admin":
                 if st.button("مسح البيانات", key="opt_clear_all",
@@ -2545,16 +2549,16 @@ for i, status in enumerate(status_labels):
 
 st.divider()
 
-# ─── بطاقة التحويل السريع المباشر (نسخ ولصق مع البطاقة) ─────────────────────────
-with st.expander("⚡ بطاقة التحويل السريع المباشر (نسخ ولصق ذكي مع البطاقة)", expanded=False):
-    st.markdown("<p style='color:var(--text-secondary);font-size:14px;margin-bottom:12px'>الصق أسطر البيانات المنسوخة مباشرة من Excel أو أي جدول، وسيقوم نظام الذكاء الاصطناعي بالتعرف التلقائي على أعمدة (الكود، الاسم، التاريخ) وتنسيقها فوراً بنظام مع البطاقة.</p>", unsafe_allow_html=True)
+# ─── بطاقة التحويل السريع المباشر (نسخ ولصق مع كود البطاقة) ─────────────────────────
+with st.expander("⚡ بطاقة التحويل السريع المباشر (نسخ ولصق ذكي مع كود البطاقة)", expanded=False):
+    st.markdown("<p style='color:var(--text-secondary);font-size:14px;margin-bottom:12px'>الصق أسطر البيانات المنسوخة مباشرة من Excel أو أي جدول، وسيقوم نظام الذكاء الاصطناعي بالتعرف التلقائي على أعمدة (الكود، الاسم، التاريخ) وتنسيقها فوراً بنظام مع كود البطاقة.</p>", unsafe_allow_html=True)
     paste_c1, paste_c2 = st.columns([3, 1])
     with paste_c1:
         raw_input_text = st.text_area("البيانات المدخلة", height=155, placeholder="الصق هنا أسطر البيانات المنسوخة (مثال: بيانات Excel مفصولة بـ TAB)...", key="txt_direct_paste", label_visibility="collapsed")
     with paste_c2:
         sep_choice = st.text_input("فاصل الحقول", value=" | ", key="txt_direct_sep", help="الفاصل بين كود الطلب والتاريخ")
         target_status = st.selectbox("تعيين إلى حالة (اختياري)", ["معاينة فقط (بدون تعيين)", "قيد التوصيل", "المؤجل", "الراجع", "تم التسليم"], key="txt_target_status")
-        btn_convert = st.button("🚀 تحويل ذكي مع البطاقة", type="primary", use_container_width=True)
+        btn_convert = st.button("🚀 تحويل ذكي مع كود البطاقة", type="primary", use_container_width=True)
 
     if btn_convert and raw_input_text.strip():
         converted_res, meta = convert_raw_text(raw_input_text, separator=sep_choice)

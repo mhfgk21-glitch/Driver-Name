@@ -318,8 +318,6 @@ class DriverApp(ctk.CTk):
             for driver_name in sorted(combined_data.keys()):
                 data = combined_data[driver_name]
                 output_lines.append(f"{driver_name}")
-                if data["codes"]:
-                    output_lines.extend(data["codes"])
                 output_lines.append(f"{data['count']}")
                 output_lines.append("-" * 15)
             final_output = "\n".join(output_lines)
