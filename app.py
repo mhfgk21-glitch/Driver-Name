@@ -1884,7 +1884,6 @@ def build_text_output(drivers_data: dict, title: str) -> str:
     for name in sorted(drivers_data.keys()):
         d = drivers_data[name]
         lines.append(name)
-        lines.extend(d["codes"])
         lines.append(str(d["count"]))
         lines.append("-" * 15)
     return "\n".join(lines)
