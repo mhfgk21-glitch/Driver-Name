@@ -1900,9 +1900,9 @@ def build_whatsapp_output(drivers_data: dict, title: str = "") -> str:
     for i, name in enumerate(names):
         d = drivers_data[name]
         items = d.get("entries") if d.get("entries") else d.get("codes", [])
+        output_lines.append(str(name))
         for item in items:
             output_lines.append(str(item))
-        output_lines.append(str(name))
         if i < len(names) - 1:
             output_lines.append("─" * 15)
     return "\n".join(output_lines)
