@@ -2098,24 +2098,88 @@ def accounting_pdf_bytes(summary_df):
 
     import urllib.request
     import tempfile
+
+    # ── Arabic font resolution ──────────────────────────────────────────────────
+    # Priority: well-known system paths → download Amiri (open Arabic TTF) at runtime
+    font_name = None
+
+    system_candidates = [
+        "/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
+        "/usr/share/fonts/opentype/noto/NotoNaskhArabic-Regular.otf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/tahoma.ttf",
+        "C:/Windows/Fonts/calibri.ttf",
+    ]
+    for path in system_candidates:
+        if os.path.exists(path):
+            try:
+                pdfmetrics.registerFont(TTFont("ArabicUI", path))
+                font_name = "ArabicUI"
+                break
+            except Exception:
+                continue
+
+    # Download Amiri (a high-quality open Arabic font) if nothing was found
+    if not font_name:
+        try:
+            amiri_url = (
+                "https://github.com/alif-type/amiri/raw/main/sources/Amiri-Regular.ttf"
+            )
+            tmp_dir = tempfile.gettempdir()
+            amiri_path = os.path.join(tmp_dir, "Amiri-Regular.ttf")
+            if not os.path.exists(amiri_path):
+                urllib.request.urlretrieve(amiri_url, amiri_path)
+            pdfmetrics.registerFont(TTFont("ArabicUI", amiri_path))
+            font_name = "ArabicUI"
+        except Exception:
+            font_name = None  # will fall back below
+
+    # Last resort: use a built-in reportlab font (no Arabic, but won't crash)
+    if not font_name:
+        font_name = "Helvetica"
+
+    # ── Arabic shaping helper ──────────────────────────────────────────────────
+    # reportlab doesn't do RTL/Arabic shaping on its own.
+    # arabic_reshaper + python-bidi produce correctly shaped, right-to-left text.
+    def _ar(text: str) -> str:
+        """Shape and reverse Arabic text for correct PDF rendering."""
+        try:
+            # pyrefly: ignore [missing-import]
+            import arabic_reshaper
+            # pyrefly: ignore [missing-import]
+            from bidi.algorithm import get_display
+            return get_display(arabic_reshaper.reshape(str(text)))
+        except ImportError:
+            return str(text)
+
+def accounting_pdf_bytes(summary_df, mode="per_driver", driver_filter=None, report_date=None):
+    """
+    mode:
+      'per_driver'   — page per driver (original)
+      'single'       — one specific driver only
+      'all_one_page' — all drivers in a single summary table on one page
+    """
+    if not REPORTLAB_AVAILABLE:
+        return None
+
+    import urllib.request
+    import tempfile
     import glob
 
-    # ── Arabic shaping (must happen before any font issues) ────────────────────
+    # ── Arabic shaping ─────────────────────────────────────────────────────────
     def _ar(text: str) -> str:
-        """Shape + bidi-reverse Arabic text so reportlab renders it correctly."""
         try:
             import arabic_reshaper
             from bidi.algorithm import get_display
-            reshaped = arabic_reshaper.reshape(str(text))
-            return get_display(reshaped)
+            return get_display(arabic_reshaper.reshape(str(text)))
         except Exception:
             return str(text)
 
-    # ── Arabic font resolution ─────────────────────────────────────────────────
+    # ── Font resolution ────────────────────────────────────────────────────────
     font_name = None
     _FONT_KEY = "ArabicUI"
-
-    # 1) Check already-registered fonts (avoid double-registration errors)
     try:
         from reportlab.pdfbase.pdfmetrics import getRegisteredFontNames
         if _FONT_KEY in getRegisteredFontNames():
@@ -2123,21 +2187,17 @@ def accounting_pdf_bytes(summary_df):
     except Exception:
         pass
 
-    # 2) Scan common system paths (TTF only — reportlab TTFont needs TTF/OTF)
     if not font_name:
-        system_ttf_globs = [
+        for pattern in [
             "/usr/share/fonts/truetype/noto/NotoNaskhArabic*.ttf",
             "/usr/share/fonts/truetype/noto/NotoSansArabic*.ttf",
-            "/usr/share/fonts/truetype/noto/NotoNaskh*.ttf",
             "/usr/share/fonts/truetype/noto/Noto*Arabic*.ttf",
             "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
             "C:/Windows/Fonts/arial.ttf",
             "C:/Windows/Fonts/tahoma.ttf",
-        ]
-        for pattern in system_ttf_globs:
-            matches = glob.glob(pattern)
-            for path in matches:
+        ]:
+            for path in glob.glob(pattern):
                 try:
                     pdfmetrics.registerFont(TTFont(_FONT_KEY, path))
                     font_name = _FONT_KEY
@@ -2147,26 +2207,15 @@ def accounting_pdf_bytes(summary_df):
             if font_name:
                 break
 
-    # 3) Download Amiri font from multiple reliable CDN mirrors
     if not font_name:
-        amiri_urls = [
-            # Google Fonts GitHub mirror (most reliable)
-            "https://github.com/google/fonts/raw/main/ofl/amiri/Amiri-Regular.ttf",
-            # jsDelivr CDN of Google Fonts repo
-            "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/amiri/Amiri-Regular.ttf",
-            # Alif-type official release (v1.000)
-            "https://github.com/alif-type/amiri/releases/download/1.000/Amiri-1.000.zip",
-        ]
         tmp_path = os.path.join(tempfile.gettempdir(), "Amiri-Regular.ttf")
-        for url in amiri_urls:
-            if url.endswith(".zip"):
-                continue  # skip zip in this simple fallback
+        for url in [
+            "https://github.com/google/fonts/raw/main/ofl/amiri/Amiri-Regular.ttf",
+            "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/amiri/Amiri-Regular.ttf",
+        ]:
             try:
                 if not os.path.exists(tmp_path):
-                    req = urllib.request.Request(
-                        url,
-                        headers={"User-Agent": "Mozilla/5.0"},
-                    )
+                    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
                     with urllib.request.urlopen(req, timeout=10) as resp:
                         with open(tmp_path, "wb") as f:
                             f.write(resp.read())
@@ -2174,67 +2223,131 @@ def accounting_pdf_bytes(summary_df):
                 font_name = _FONT_KEY
                 break
             except Exception:
-                # Remove partial download before retrying
                 if os.path.exists(tmp_path):
-                    try:
-                        os.remove(tmp_path)
-                    except Exception:
-                        pass
-                continue
+                    try: os.remove(tmp_path)
+                    except Exception: pass
 
-    # 4) Last resort — built-in font (no Arabic glyphs, but won't crash)
     if not font_name:
         font_name = "Helvetica"
 
-
-    # ── Document setup ──────────────────────────────────────────────────────────
+    # ── Shared styles ──────────────────────────────────────────────────────────
     output = BytesIO()
     doc = SimpleDocTemplate(
         output, pagesize=A4,
-        rightMargin=36, leftMargin=36, topMargin=40, bottomMargin=40
+        rightMargin=40, leftMargin=40, topMargin=44, bottomMargin=40
     )
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
-        "ArabicTitle", parent=styles["Title"], fontName=font_name,
-        fontSize=18, leading=24, alignment=1, spaceAfter=18
+        "ArTitle", parent=styles["Title"], fontName=font_name,
+        fontSize=16, leading=22, alignment=1, spaceAfter=6
+    )
+    sub_style = ParagraphStyle(
+        "ArSub", parent=styles["Normal"], fontName=font_name,
+        fontSize=10, leading=14, alignment=1, textColor=colors.HexColor("#667085"),
+        spaceAfter=14
     )
     body_style = ParagraphStyle(
-        "ArabicBody", parent=styles["BodyText"], fontName=font_name,
+        "ArBody", parent=styles["BodyText"], fontName=font_name,
         fontSize=11, leading=17, alignment=1
     )
     small_style = ParagraphStyle(
-        "ArabicSmall", parent=body_style, fontSize=9, leading=14
+        "ArSmall", parent=body_style, fontSize=8, leading=12,
+        textColor=colors.HexColor("#667085")
     )
 
+    date_str = report_date.strftime("%Y/%m/%d") if report_date else date.today().strftime("%Y/%m/%d")
     story = []
-    for idx, row in summary_df.reset_index(drop=True).iterrows():
-        story.append(Paragraph(_ar("كشف محاسبة المندوب"), title_style))
-        story.append(Paragraph(_ar(f"المندوب: {row['المندوب']}"), body_style))
-        story.append(Paragraph(_ar(f"القسم: {row['القسم']}"), body_style))
-        story.append(Spacer(1, 10))
-        data = [
-            [_ar("البيان"), _ar("القيمة")],
-            [_ar("عدد الطلبات"), f"{int(row['عدد الطلبات']):,}"],
-            [_ar("تسعيرة الطلب"), f"{int(row['التسعيرة']):,}"],
-            [_ar("المبلغ المستحق"), f"{int(row['المبلغ']):,}"],
-        ]
-        table = Table(data, colWidths=[230, 230], hAlign="CENTER")
-        table.setStyle(TableStyle([
+
+    def _tbl_style(header_color="#0f766e"):
+        return TableStyle([
             ("FONTNAME",      (0, 0), (-1, -1), font_name),
-            ("FONTSIZE",      (0, 0), (-1, -1), 11),
+            ("FONTSIZE",      (0, 0), (-1, -1), 10),
             ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
-            ("BACKGROUND",    (0, 0), (-1,  0), colors.HexColor("#0f766e")),
+            ("BACKGROUND",    (0, 0), (-1,  0), colors.HexColor(header_color)),
             ("TEXTCOLOR",     (0, 0), (-1,  0), colors.white),
+            ("FONTSIZE",      (0, 0), (-1,  0), 11),
             ("GRID",          (0, 0), (-1, -1), 0.5, colors.HexColor("#dfe7ef")),
             ("BACKGROUND",    (0, 1), (-1, -1), colors.HexColor("#f8fafc")),
-            ("TOPPADDING",    (0, 0), (-1, -1), 9),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
-        ]))
-        story.append(table)
-        story.append(Spacer(1, 20))
+            ("ROWBACKGROUNDS",(0, 1), (-1, -1),
+                [colors.HexColor("#f8fafc"), colors.HexColor("#ffffff")]),
+            ("TOPPADDING",    (0, 0), (-1, -1), 8),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ])
+
+    # ── Mode: all on one page ──────────────────────────────────────────────────
+    if mode == "all_one_page":
+        story.append(Paragraph(_ar("كشف محاسبة المندوبين"), title_style))
+        story.append(Paragraph(_ar(f"تاريخ الكشف: {date_str}"), sub_style))
+        header = [_ar(c) for c in ["المندوب", "القسم", "عدد الطلبات", "التسعيرة", "المبلغ (د.ع)"]]
+        rows_data = [header]
+        for _, row in summary_df.iterrows():
+            rows_data.append([
+                _ar(str(row["المندوب"])),
+                _ar(str(row["القسم"])),
+                f"{int(row['عدد الطلبات']):,}",
+                f"{int(row['التسعيرة']):,}",
+                f"{int(row['المبلغ']):,}",
+            ])
+        # totals row
+        rows_data.append([
+            _ar("الإجمالي"), "",
+            f"{int(summary_df['عدد الطلبات'].sum()):,}",
+            "",
+            f"{int(summary_df['المبلغ'].sum()):,}",
+        ])
+        tbl = Table(rows_data, colWidths=[130, 65, 80, 80, 90], hAlign="CENTER")
+        ts = _tbl_style()
+        ts.add("BACKGROUND",    (0, len(rows_data)-1), (-1, len(rows_data)-1), colors.HexColor("#ccfbf1"))
+        ts.add("FONTNAME",      (0, len(rows_data)-1), (-1, len(rows_data)-1), font_name)
+        ts.add("TEXTCOLOR",     (0, len(rows_data)-1), (-1, len(rows_data)-1), colors.HexColor("#0f766e"))
+        tbl.setStyle(ts)
+        story.append(tbl)
+        story.append(Spacer(1, 16))
         story.append(Paragraph(_ar("نظام بيانات المندوبين"), small_style))
-        if idx < len(summary_df) - 1:
-            story.append(PageBreak())
+
+    # ── Mode: single driver ────────────────────────────────────────────────────
+    elif mode == "single" and driver_filter:
+        df_f = summary_df[summary_df["المندوب"] == driver_filter]
+        for idx, row in df_f.reset_index(drop=True).iterrows():
+            story.append(Paragraph(_ar("كشف محاسبة المندوب"), title_style))
+            story.append(Paragraph(_ar(f"تاريخ الكشف: {date_str}"), sub_style))
+            story.append(Paragraph(_ar(f"المندوب: {row['المندوب']}"), body_style))
+            story.append(Paragraph(_ar(f"القسم: {row['القسم']}"), body_style))
+            story.append(Spacer(1, 10))
+            data = [
+                [_ar("البيان"), _ar("القيمة")],
+                [_ar("عدد الطلبات"), f"{int(row['عدد الطلبات']):,}"],
+                [_ar("تسعيرة الطلب"), f"{int(row['التسعيرة']):,} د.ع"],
+                [_ar("المبلغ المستحق"), f"{int(row['المبلغ']):,} د.ع"],
+            ]
+            tbl = Table(data, colWidths=[230, 230], hAlign="CENTER")
+            tbl.setStyle(_tbl_style())
+            story.append(tbl)
+            story.append(Spacer(1, 20))
+            story.append(Paragraph(_ar("نظام بيانات المندوبين"), small_style))
+
+    # ── Mode: per_driver (original — page per driver) ──────────────────────────
+    else:
+        for idx, row in summary_df.reset_index(drop=True).iterrows():
+            story.append(Paragraph(_ar("كشف محاسبة المندوب"), title_style))
+            story.append(Paragraph(_ar(f"تاريخ الكشف: {date_str}"), sub_style))
+            story.append(Paragraph(_ar(f"المندوب: {row['المندوب']}"), body_style))
+            story.append(Paragraph(_ar(f"القسم: {row['القسم']}"), body_style))
+            story.append(Spacer(1, 10))
+            data = [
+                [_ar("البيان"), _ar("القيمة")],
+                [_ar("عدد الطلبات"), f"{int(row['عدد الطلبات']):,}"],
+                [_ar("تسعيرة الطلب"), f"{int(row['التسعيرة']):,} د.ع"],
+                [_ar("المبلغ المستحق"), f"{int(row['المبلغ']):,} د.ع"],
+            ]
+            tbl = Table(data, colWidths=[230, 230], hAlign="CENTER")
+            tbl.setStyle(_tbl_style())
+            story.append(tbl)
+            story.append(Spacer(1, 20))
+            story.append(Paragraph(_ar("نظام بيانات المندوبين"), small_style))
+            if idx < len(summary_df) - 1:
+                story.append(PageBreak())
+
     doc.build(story)
     return output.getvalue()
 
@@ -2342,11 +2455,13 @@ def render_accounting_page():
             st.info("ارفع كشف Excel أولًا.")
         else:
             summary = accounting_build_summary(st.session_state.accounting_rows)
+
+            # ── جدول الملخص ────────────────────────────────────────────────────
             st.dataframe(
                 summary.style.format({
                     "عدد الطلبات": "{:,.0f}",
-                    "التسعيرة": "{:,.0f}",
-                    "المبلغ": "{:,.0f}",
+                    "التسعيرة":    "{:,.0f}",
+                    "المبلغ":      "{:,.0f}",
                 }),
                 use_container_width=True,
                 hide_index=True,
@@ -2357,20 +2472,68 @@ def render_accounting_page():
             c1.metric("إجمالي الطلبات", f"{total_orders:,}")
             c2.metric("الإجمالي المستحق", f"{total_amount:,} د.ع")
 
-            pdf_data = accounting_pdf_bytes(summary)
-            if pdf_data:
-                st.download_button(
-                    "🖨️ تنزيل PDF — A4، صفحة لكل مندوب",
-                    data=pdf_data,
-                    file_name="كشف_محاسبة_المندوبين.pdf",
-                    mime="application/pdf",
-                    use_container_width=True,
-                    type="primary",
-                )
+            st.divider()
+
+            if not REPORTLAB_AVAILABLE:
+                st.warning("ميزة PDF تحتاج حزمة reportlab. أضف reportlab إلى requirements.txt ثم أعد النشر.")
             else:
-                st.warning(
-                    "ميزة PDF تحتاج حزمة reportlab. أضف reportlab إلى requirements.txt ثم أعد النشر."
+                # ── تاريخ الكشف ────────────────────────────────────────────────
+                rpt_date = st.date_input(
+                    "📅 تاريخ الكشف",
+                    value=date.today(),
+                    key="accounting_report_date",
                 )
+
+                st.markdown("#### خيارات الطباعة")
+                pdf_col1, pdf_col2 = st.columns(2)
+
+                # ── خيار 1: كشف لمندوب محدد ────────────────────────────────────
+                with pdf_col1:
+                    st.markdown("**📄 كشف مندوب محدد**")
+                    driver_names = sorted(summary["المندوب"].tolist())
+                    selected_driver = st.selectbox(
+                        "اختر المندوب",
+                        options=driver_names,
+                        key="accounting_pdf_driver",
+                        label_visibility="collapsed",
+                    )
+                    pdf_single = accounting_pdf_bytes(
+                        summary,
+                        mode="single",
+                        driver_filter=selected_driver,
+                        report_date=rpt_date,
+                    )
+                    if pdf_single:
+                        safe_name = selected_driver.replace(" ", "_")[:30]
+                        st.download_button(
+                            f"🖨️ طباعة كشف {selected_driver}",
+                            data=pdf_single,
+                            file_name=f"كشف_{safe_name}.pdf",
+                            mime="application/pdf",
+                            use_container_width=True,
+                            type="primary",
+                            key="dl_single_driver",
+                        )
+
+                # ── خيار 2: كشف شامل في ورقة واحدة ────────────────────────────
+                with pdf_col2:
+                    st.markdown("**📋 كشف شامل (ورقة واحدة)**")
+                    st.caption("جميع المندوبين في جدول واحد مع الإجمالي")
+                    pdf_all = accounting_pdf_bytes(
+                        summary,
+                        mode="all_one_page",
+                        report_date=rpt_date,
+                    )
+                    if pdf_all:
+                        st.download_button(
+                            "🖨️ طباعة الكشف الشامل",
+                            data=pdf_all,
+                            file_name=f"كشف_شامل_{rpt_date.strftime('%Y-%m-%d')}.pdf",
+                            mime="application/pdf",
+                            use_container_width=True,
+                            type="secondary",
+                            key="dl_all_one_page",
+                        )
 
 
 # ─── Session State ─────────────────────────────────────────────────────────────
