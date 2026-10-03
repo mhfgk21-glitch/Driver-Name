@@ -2005,7 +2005,9 @@ ACCOUNTING_DRIVER_COLS = [
     "اسم المندوب", "المندوب", "drivername", "driver", "الاسم", "اسم المندوبين"
 ]
 ACCOUNTING_RECEIPT_COLS = [
-    "رقم الوصل", "رقم الوصول", "الوصل", "الوصول", "رقم الطلب", "code", "كود", "id"
+    "رقم الوصل", "رقم الوصول", "الوصل", "الوصول", "رقم الطلب",
+    "code", "كود", "id", "الكود", "رقم", "serial", "رقم الفاتورة",
+    "invoice", "order_id", "order id", "رقم الطلبية", "الرقم",
 ]
 
 def _norm_col(value):
@@ -2029,22 +2031,43 @@ def accounting_extract_rows(df):
     driver_col = _find_col(df, ACCOUNTING_DRIVER_COLS)
     receipt_col = _find_col(df, ACCOUNTING_RECEIPT_COLS)
 
+    # Fallback: try to find driver column by scanning actual column names
+    # (do NOT call detect_columns — it may return wrong col names for accounting sheets)
     if not driver_col:
-        # Reuse the project's existing smart detector when possible.
-        try:
-            driver_col, detected_receipt_col, _ = detect_columns(df)
-            receipt_col = receipt_col or detected_receipt_col
-        except Exception:
-            pass
+        for col in df.columns:
+            col_low = str(col).strip().lower()
+            if any(x in col_low for x in ["driver", "مندوب", "اسم"]):
+                driver_col = col
+                break
 
     if not driver_col:
-        return None, None, "لم يتم العثور على عمود اسم المندوب."
+        return None, None, "لم يتم العثور على عمود اسم المندوب في الملف."
+
+    # If no receipt column found, treat each non-empty driver row as one order.
     if not receipt_col:
-        # If there is no explicit receipt/code column, each non-empty driver row
-        # is still treated as one receipt, matching the requested counting rule.
         work = df[[driver_col]].copy()
-        work["__receipt__"] = range(1, len(work) + 1)
-        receipt_col = "__receipt__"
+        work.columns = ["المندوب"]
+        work["المندوب"] = work["المندوب"].astype(str).str.strip()
+        work = work[
+            work["المندوب"].ne("") & work["المندوب"].str.lower().ne("nan")
+        ].copy()
+        work["رقم الوصل"] = range(1, len(work) + 1)
+        if work.empty:
+            return None, None, "لم توجد وصولات صالحة في الملف."
+        return work, driver_col, None
+
+    # Verify receipt_col actually exists in dataframe before using it
+    if receipt_col not in df.columns:
+        work = df[[driver_col]].copy()
+        work.columns = ["المندوب"]
+        work["المندوب"] = work["المندوب"].astype(str).str.strip()
+        work = work[
+            work["المندوب"].ne("") & work["المندوب"].str.lower().ne("nan")
+        ].copy()
+        work["رقم الوصل"] = range(1, len(work) + 1)
+        if work.empty:
+            return None, None, "لم توجد وصولات صالحة في الملف."
+        return work, driver_col, None
 
     work = df[[driver_col, receipt_col]].copy()
     work.columns = ["المندوب", "رقم الوصل"]
