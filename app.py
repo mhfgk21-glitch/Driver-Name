@@ -2165,7 +2165,6 @@ def render_accounting_page():
         "<div class='section-title'><i class='pi pi-calculator'></i><span>محاسبة المندوبين</span></div>",
         unsafe_allow_html=True,
     )
-    st.caption("رفع كشف Excel → تحديد مركز/قضاء → احتساب الطلبات والمبالغ → طباعة PDF A4.")
 
     if st.button("العودة إلى الصفحة الرئيسية", key="accounting_back_home"):
         st.session_state.current_page = "home"
