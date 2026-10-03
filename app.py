@@ -2276,8 +2276,23 @@ def accounting_pdf_bytes(summary_df, mode="per_driver", driver_filter=None, repo
 
     # ── Mode: all on one page ──────────────────────────────────────────────────
     if mode == "all_one_page":
-        story.append(Paragraph(_ar("كشف محاسبة المندوبين"), title_style))
-        story.append(Paragraph(_ar(f"تاريخ الكشف: {date_str}"), sub_style))
+        from reportlab.platypus import KeepTogether
+
+        # A4 usable height ≈ 842 - 44 - 40 = 758 pt
+        # Title + subtitle ≈ 60pt, footer ≈ 20pt → available for table ≈ 678pt
+        n_data_rows = len(summary_df)          # driver rows (no header/total)
+        n_rows_total = n_data_rows + 2          # + header + total
+
+        # Dynamically pick font & padding so everything fits in ~678 pt
+        if n_rows_total <= 18:
+            row_fs, row_pad = 10, 7
+        elif n_rows_total <= 28:
+            row_fs, row_pad = 9, 5
+        elif n_rows_total <= 40:
+            row_fs, row_pad = 8, 4
+        else:
+            row_fs, row_pad = 7, 3
+
         header = [_ar(c) for c in ["المندوب", "القسم", "عدد الطلبات", "التسعيرة", "المبلغ (د.ع)"]]
         rows_data = [header]
         for _, row in summary_df.iterrows():
@@ -2295,15 +2310,37 @@ def accounting_pdf_bytes(summary_df, mode="per_driver", driver_filter=None, repo
             "",
             f"{int(summary_df['المبلغ'].sum()):,}",
         ])
+
+        total_idx = len(rows_data) - 1
         tbl = Table(rows_data, colWidths=[130, 65, 80, 80, 90], hAlign="CENTER")
-        ts = _tbl_style()
-        ts.add("BACKGROUND",    (0, len(rows_data)-1), (-1, len(rows_data)-1), colors.HexColor("#ccfbf1"))
-        ts.add("FONTNAME",      (0, len(rows_data)-1), (-1, len(rows_data)-1), font_name)
-        ts.add("TEXTCOLOR",     (0, len(rows_data)-1), (-1, len(rows_data)-1), colors.HexColor("#0f766e"))
+        ts = TableStyle([
+            ("FONTNAME",      (0, 0), (-1, -1), font_name),
+            ("FONTSIZE",      (0, 0), (-1, -1), row_fs),
+            ("FONTSIZE",      (0, 0), (-1,  0), row_fs + 1),   # header slightly bigger
+            ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
+            ("BACKGROUND",    (0, 0), (-1,  0), colors.HexColor("#0f766e")),
+            ("TEXTCOLOR",     (0, 0), (-1,  0), colors.white),
+            ("GRID",          (0, 0), (-1, -1), 0.4, colors.HexColor("#dfe7ef")),
+            ("BACKGROUND",    (0, 1), (-1, total_idx - 1), colors.HexColor("#f8fafc")),
+            ("ROWBACKGROUNDS",(0, 1), (-1, total_idx - 1),
+                [colors.HexColor("#f8fafc"), colors.HexColor("#ffffff")]),
+            ("TOPPADDING",    (0, 0), (-1, -1), row_pad),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), row_pad),
+            # totals row styling
+            ("BACKGROUND",    (0, total_idx), (-1, total_idx), colors.HexColor("#ccfbf1")),
+            ("TEXTCOLOR",     (0, total_idx), (-1, total_idx), colors.HexColor("#0f766e")),
+            ("FONTNAME",      (0, total_idx), (-1, total_idx), font_name),
+        ])
         tbl.setStyle(ts)
-        story.append(tbl)
-        story.append(Spacer(1, 16))
-        story.append(Paragraph(_ar("نظام بيانات المندوبين"), small_style))
+
+        block = [
+            Paragraph(_ar("كشف محاسبة المندوبين"), title_style),
+            Paragraph(_ar(f"تاريخ الكشف: {date_str}"), sub_style),
+            tbl,
+            Spacer(1, 10),
+            Paragraph(_ar("نظام بيانات المندوبين"), small_style),
+        ]
+        story.append(KeepTogether(block))
 
     # ── Mode: single driver ────────────────────────────────────────────────────
     elif mode == "single" and driver_filter:
