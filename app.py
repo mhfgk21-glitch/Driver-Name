@@ -2098,59 +2098,94 @@ def accounting_pdf_bytes(summary_df):
 
     import urllib.request
     import tempfile
+    import glob
 
-    # ── Arabic font resolution ──────────────────────────────────────────────────
-    # Priority: well-known system paths → download Amiri (open Arabic TTF) at runtime
-    font_name = None
-
-    system_candidates = [
-        "/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
-        "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
-        "/usr/share/fonts/opentype/noto/NotoNaskhArabic-Regular.otf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "C:/Windows/Fonts/arial.ttf",
-        "C:/Windows/Fonts/tahoma.ttf",
-        "C:/Windows/Fonts/calibri.ttf",
-    ]
-    for path in system_candidates:
-        if os.path.exists(path):
-            try:
-                pdfmetrics.registerFont(TTFont("ArabicUI", path))
-                font_name = "ArabicUI"
-                break
-            except Exception:
-                continue
-
-    # Download Amiri (a high-quality open Arabic font) if nothing was found
-    if not font_name:
-        try:
-            amiri_url = (
-                "https://github.com/alif-type/amiri/raw/main/sources/Amiri-Regular.ttf"
-            )
-            tmp_dir = tempfile.gettempdir()
-            amiri_path = os.path.join(tmp_dir, "Amiri-Regular.ttf")
-            if not os.path.exists(amiri_path):
-                urllib.request.urlretrieve(amiri_url, amiri_path)
-            pdfmetrics.registerFont(TTFont("ArabicUI", amiri_path))
-            font_name = "ArabicUI"
-        except Exception:
-            font_name = None  # will fall back below
-
-    # Last resort: use a built-in reportlab font (no Arabic, but won't crash)
-    if not font_name:
-        font_name = "Helvetica"
-
-    # ── Arabic shaping helper ──────────────────────────────────────────────────
-    # reportlab doesn't do RTL/Arabic shaping on its own.
-    # arabic_reshaper + python-bidi produce correctly shaped, right-to-left text.
+    # ── Arabic shaping (must happen before any font issues) ────────────────────
     def _ar(text: str) -> str:
-        """Shape and reverse Arabic text for correct PDF rendering."""
+        """Shape + bidi-reverse Arabic text so reportlab renders it correctly."""
         try:
             import arabic_reshaper
             from bidi.algorithm import get_display
-            return get_display(arabic_reshaper.reshape(str(text)))
-        except ImportError:
+            reshaped = arabic_reshaper.reshape(str(text))
+            return get_display(reshaped)
+        except Exception:
             return str(text)
+
+    # ── Arabic font resolution ─────────────────────────────────────────────────
+    font_name = None
+    _FONT_KEY = "ArabicUI"
+
+    # 1) Check already-registered fonts (avoid double-registration errors)
+    try:
+        from reportlab.pdfbase.pdfmetrics import getRegisteredFontNames
+        if _FONT_KEY in getRegisteredFontNames():
+            font_name = _FONT_KEY
+    except Exception:
+        pass
+
+    # 2) Scan common system paths (TTF only — reportlab TTFont needs TTF/OTF)
+    if not font_name:
+        system_ttf_globs = [
+            "/usr/share/fonts/truetype/noto/NotoNaskhArabic*.ttf",
+            "/usr/share/fonts/truetype/noto/NotoSansArabic*.ttf",
+            "/usr/share/fonts/truetype/noto/NotoNaskh*.ttf",
+            "/usr/share/fonts/truetype/noto/Noto*Arabic*.ttf",
+            "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "C:/Windows/Fonts/arial.ttf",
+            "C:/Windows/Fonts/tahoma.ttf",
+        ]
+        for pattern in system_ttf_globs:
+            matches = glob.glob(pattern)
+            for path in matches:
+                try:
+                    pdfmetrics.registerFont(TTFont(_FONT_KEY, path))
+                    font_name = _FONT_KEY
+                    break
+                except Exception:
+                    continue
+            if font_name:
+                break
+
+    # 3) Download Amiri font from multiple reliable CDN mirrors
+    if not font_name:
+        amiri_urls = [
+            # Google Fonts GitHub mirror (most reliable)
+            "https://github.com/google/fonts/raw/main/ofl/amiri/Amiri-Regular.ttf",
+            # jsDelivr CDN of Google Fonts repo
+            "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/amiri/Amiri-Regular.ttf",
+            # Alif-type official release (v1.000)
+            "https://github.com/alif-type/amiri/releases/download/1.000/Amiri-1.000.zip",
+        ]
+        tmp_path = os.path.join(tempfile.gettempdir(), "Amiri-Regular.ttf")
+        for url in amiri_urls:
+            if url.endswith(".zip"):
+                continue  # skip zip in this simple fallback
+            try:
+                if not os.path.exists(tmp_path):
+                    req = urllib.request.Request(
+                        url,
+                        headers={"User-Agent": "Mozilla/5.0"},
+                    )
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        with open(tmp_path, "wb") as f:
+                            f.write(resp.read())
+                pdfmetrics.registerFont(TTFont(_FONT_KEY, tmp_path))
+                font_name = _FONT_KEY
+                break
+            except Exception:
+                # Remove partial download before retrying
+                if os.path.exists(tmp_path):
+                    try:
+                        os.remove(tmp_path)
+                    except Exception:
+                        pass
+                continue
+
+    # 4) Last resort — built-in font (no Arabic glyphs, but won't crash)
+    if not font_name:
+        font_name = "Helvetica"
+
 
     # ── Document setup ──────────────────────────────────────────────────────────
     output = BytesIO()
