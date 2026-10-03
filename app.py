@@ -2095,21 +2095,64 @@ def accounting_build_summary(rows):
 def accounting_pdf_bytes(summary_df):
     if not REPORTLAB_AVAILABLE:
         return None
-    # Prefer a common Arabic font if available on the deployment.
-    font_candidates = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+
+    import urllib.request
+    import tempfile
+
+    # ── Arabic font resolution ──────────────────────────────────────────────────
+    # Priority: well-known system paths → download Amiri (open Arabic TTF) at runtime
+    font_name = None
+
+    system_candidates = [
+        "/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
         "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
+        "/usr/share/fonts/opentype/noto/NotoNaskhArabic-Regular.otf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/tahoma.ttf",
+        "C:/Windows/Fonts/calibri.ttf",
     ]
-    font_path = next((p for p in font_candidates if os.path.exists(p)), None)
-    font_name = "Helvetica"
-    if font_path:
+    for path in system_candidates:
+        if os.path.exists(path):
+            try:
+                pdfmetrics.registerFont(TTFont("ArabicUI", path))
+                font_name = "ArabicUI"
+                break
+            except Exception:
+                continue
+
+    # Download Amiri (a high-quality open Arabic font) if nothing was found
+    if not font_name:
         try:
-            pdfmetrics.registerFont(TTFont("ArabicUI", font_path))
+            amiri_url = (
+                "https://github.com/alif-type/amiri/raw/main/sources/Amiri-Regular.ttf"
+            )
+            tmp_dir = tempfile.gettempdir()
+            amiri_path = os.path.join(tmp_dir, "Amiri-Regular.ttf")
+            if not os.path.exists(amiri_path):
+                urllib.request.urlretrieve(amiri_url, amiri_path)
+            pdfmetrics.registerFont(TTFont("ArabicUI", amiri_path))
             font_name = "ArabicUI"
         except Exception:
-            pass
+            font_name = None  # will fall back below
 
+    # Last resort: use a built-in reportlab font (no Arabic, but won't crash)
+    if not font_name:
+        font_name = "Helvetica"
+
+    # ── Arabic shaping helper ──────────────────────────────────────────────────
+    # reportlab doesn't do RTL/Arabic shaping on its own.
+    # arabic_reshaper + python-bidi produce correctly shaped, right-to-left text.
+    def _ar(text: str) -> str:
+        """Shape and reverse Arabic text for correct PDF rendering."""
+        try:
+            import arabic_reshaper
+            from bidi.algorithm import get_display
+            return get_display(arabic_reshaper.reshape(str(text)))
+        except ImportError:
+            return str(text)
+
+    # ── Document setup ──────────────────────────────────────────────────────────
     output = BytesIO()
     doc = SimpleDocTemplate(
         output, pagesize=A4,
@@ -2118,11 +2161,11 @@ def accounting_pdf_bytes(summary_df):
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
         "ArabicTitle", parent=styles["Title"], fontName=font_name,
-        fontSize=18, leading=24, alignment=2, spaceAfter=18
+        fontSize=18, leading=24, alignment=1, spaceAfter=18
     )
     body_style = ParagraphStyle(
         "ArabicBody", parent=styles["BodyText"], fontName=font_name,
-        fontSize=11, leading=17, alignment=2
+        fontSize=11, leading=17, alignment=1
     )
     small_style = ParagraphStyle(
         "ArabicSmall", parent=body_style, fontSize=9, leading=14
@@ -2130,31 +2173,31 @@ def accounting_pdf_bytes(summary_df):
 
     story = []
     for idx, row in summary_df.reset_index(drop=True).iterrows():
-        story.append(Paragraph("كشف محاسبة المندوب", title_style))
-        story.append(Paragraph(f"المندوب: {row['المندوب']}", body_style))
-        story.append(Paragraph(f"القسم: {row['القسم']}", body_style))
+        story.append(Paragraph(_ar("كشف محاسبة المندوب"), title_style))
+        story.append(Paragraph(_ar(f"المندوب: {row['المندوب']}"), body_style))
+        story.append(Paragraph(_ar(f"القسم: {row['القسم']}"), body_style))
         story.append(Spacer(1, 10))
         data = [
-            ["البيان", "القيمة"],
-            ["عدد الطلبات", f"{int(row['عدد الطلبات']):,}"],
-            ["تسعيرة الطلب", f"{int(row['التسعيرة']):,} د.ع"],
-            ["المبلغ المستحق", f"{int(row['المبلغ']):,} د.ع"],
+            [_ar("البيان"), _ar("القيمة")],
+            [_ar("عدد الطلبات"), f"{int(row['عدد الطلبات']):,}"],
+            [_ar("تسعيرة الطلب"), f"{int(row['التسعيرة']):,}"],
+            [_ar("المبلغ المستحق"), f"{int(row['المبلغ']):,}"],
         ]
-        table = Table(data, colWidths=[230, 230], hAlign="RIGHT")
+        table = Table(data, colWidths=[230, 230], hAlign="CENTER")
         table.setStyle(TableStyle([
-            ("FONTNAME", (0,0), (-1,-1), font_name),
-            ("FONTSIZE", (0,0), (-1,-1), 11),
-            ("ALIGN", (0,0), (-1,-1), "RIGHT"),
-            ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#0f766e")),
-            ("TEXTCOLOR", (0,0), (-1,0), colors.white),
-            ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#dfe7ef")),
-            ("BACKGROUND", (0,1), (-1,-1), colors.HexColor("#f8fafc")),
-            ("TOPPADDING", (0,0), (-1,-1), 9),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 9),
+            ("FONTNAME",      (0, 0), (-1, -1), font_name),
+            ("FONTSIZE",      (0, 0), (-1, -1), 11),
+            ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
+            ("BACKGROUND",    (0, 0), (-1,  0), colors.HexColor("#0f766e")),
+            ("TEXTCOLOR",     (0, 0), (-1,  0), colors.white),
+            ("GRID",          (0, 0), (-1, -1), 0.5, colors.HexColor("#dfe7ef")),
+            ("BACKGROUND",    (0, 1), (-1, -1), colors.HexColor("#f8fafc")),
+            ("TOPPADDING",    (0, 0), (-1, -1), 9),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
         ]))
         story.append(table)
         story.append(Spacer(1, 20))
-        story.append(Paragraph("نظام بيانات المندوبين", small_style))
+        story.append(Paragraph(_ar("نظام بيانات المندوبين"), small_style))
         if idx < len(summary_df) - 1:
             story.append(PageBreak())
     doc.build(story)
