@@ -1,5 +1,6 @@
 # pyrefly: ignore [missing-import]
 import streamlit as st
+# pyrefly: ignore [missing-import]
 import streamlit.components.v1 as components
 import pandas as pd
 # pyrefly: ignore [missing-import]
@@ -19,6 +20,18 @@ from io import BytesIO
 from datetime import date, datetime, timedelta
 
 try:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    REPORTLAB_AVAILABLE = False
+
+try:
+    # pyrefly: ignore [missing-import]
     import extra_streamlit_components as stx
 except ImportError:
     stx = None
@@ -43,6 +56,13 @@ if "show_user_management" not in st.session_state:
     st.session_state.show_user_management = False
 if "current_page" not in st.session_state:
     st.session_state.current_page = "home"
+
+if "accounting_assignments" not in st.session_state:
+    st.session_state.accounting_assignments = {}
+if "accounting_rates" not in st.session_state:
+    st.session_state.accounting_rates = {"مركز": 2000, "قضاء": 3000}
+if "accounting_rows" not in st.session_state:
+    st.session_state.accounting_rows = None
 
 AUTH_USERS = {
     os.getenv("APP_ADMIN_USERNAME", "admin"): {
@@ -1228,7 +1248,7 @@ hr { border-color: var(--line) !important; }
     box-shadow: 0 0 0 0.18rem rgba(83, 43, 253, 0.16) !important;
 }
 
-.st-key-topbar_logout > button {
+.st-key-topbar_accounting > button { min-height: 38px; border-radius: 2rem !important; background:#f0fdfa !important; color:#0f766e !important; border-color:#b7d8d4 !important; font-size:0.76rem !important; font-weight:700 !important; margin-bottom:5px; }\n\n.st-key-topbar_logout > button {
     min-height: 38px;
     height: 38px;
     padding: 0.5rem 1.15rem !important;
@@ -1979,6 +1999,280 @@ def get_top_driver(all_data: dict) -> tuple:
     return "---", 0
 
 
+
+# ─── محاسبة المندوبين ───────────────────────────────────────────────────────────
+ACCOUNTING_DRIVER_COLS = [
+    "اسم المندوب", "المندوب", "drivername", "driver", "الاسم", "اسم المندوبين"
+]
+ACCOUNTING_RECEIPT_COLS = [
+    "رقم الوصل", "رقم الوصول", "الوصل", "الوصول", "رقم الطلب", "code", "كود", "id"
+]
+
+def _norm_col(value):
+    return re.sub(r"\s+", "", str(value).strip().lower())
+
+def _find_col(df, candidates):
+    normalized = {_norm_col(c): c for c in df.columns}
+    for candidate in candidates:
+        key = _norm_col(candidate)
+        if key in normalized:
+            return normalized[key]
+    # fallback: substring matching
+    for c in df.columns:
+        cc = _norm_col(c)
+        if any(_norm_col(x) in cc or cc in _norm_col(x) for x in candidates):
+            return c
+    return None
+
+def accounting_extract_rows(df):
+    """Extract driver and receipt rows. One non-empty receipt row = one order."""
+    driver_col = _find_col(df, ACCOUNTING_DRIVER_COLS)
+    receipt_col = _find_col(df, ACCOUNTING_RECEIPT_COLS)
+
+    if not driver_col:
+        # Reuse the project's existing smart detector when possible.
+        try:
+            driver_col, detected_receipt_col, _ = detect_columns(df)
+            receipt_col = receipt_col or detected_receipt_col
+        except Exception:
+            pass
+
+    if not driver_col:
+        return None, None, "لم يتم العثور على عمود اسم المندوب."
+    if not receipt_col:
+        # If there is no explicit receipt/code column, each non-empty driver row
+        # is still treated as one receipt, matching the requested counting rule.
+        work = df[[driver_col]].copy()
+        work["__receipt__"] = range(1, len(work) + 1)
+        receipt_col = "__receipt__"
+
+    work = df[[driver_col, receipt_col]].copy()
+    work.columns = ["المندوب", "رقم الوصل"]
+    work["المندوب"] = work["المندوب"].astype(str).str.strip()
+    work["رقم الوصل"] = work["رقم الوصل"].astype(str).str.strip()
+    work = work[
+        (work["المندوب"].ne("")) &
+        (work["المندوب"].str.lower().ne("nan")) &
+        (work["رقم الوصل"].ne("")) &
+        (work["رقم الوصل"].str.lower().ne("nan"))
+    ].copy()
+    if work.empty:
+        return None, None, "لم توجد وصولات صالحة في الملف."
+    return work, driver_col, None
+
+def accounting_build_summary(rows):
+    grouped = rows.groupby("المندوب", sort=True).size().reset_index(name="عدد الطلبات")
+    assignments = st.session_state.accounting_assignments
+    rates = st.session_state.accounting_rates
+    grouped["القسم"] = grouped["المندوب"].map(lambda n: assignments.get(n, "مركز"))
+    grouped["التسعيرة"] = grouped["القسم"].map(lambda s: int(rates.get(s, 0)))
+    grouped["المبلغ"] = grouped["عدد الطلبات"] * grouped["التسعيرة"]
+    return grouped[["المندوب", "القسم", "عدد الطلبات", "التسعيرة", "المبلغ"]]
+
+def accounting_pdf_bytes(summary_df):
+    if not REPORTLAB_AVAILABLE:
+        return None
+    # Prefer a common Arabic font if available on the deployment.
+    font_candidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+    ]
+    font_path = next((p for p in font_candidates if os.path.exists(p)), None)
+    font_name = "Helvetica"
+    if font_path:
+        try:
+            pdfmetrics.registerFont(TTFont("ArabicUI", font_path))
+            font_name = "ArabicUI"
+        except Exception:
+            pass
+
+    output = BytesIO()
+    doc = SimpleDocTemplate(
+        output, pagesize=A4,
+        rightMargin=36, leftMargin=36, topMargin=40, bottomMargin=40
+    )
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "ArabicTitle", parent=styles["Title"], fontName=font_name,
+        fontSize=18, leading=24, alignment=2, spaceAfter=18
+    )
+    body_style = ParagraphStyle(
+        "ArabicBody", parent=styles["BodyText"], fontName=font_name,
+        fontSize=11, leading=17, alignment=2
+    )
+    small_style = ParagraphStyle(
+        "ArabicSmall", parent=body_style, fontSize=9, leading=14
+    )
+
+    story = []
+    for idx, row in summary_df.reset_index(drop=True).iterrows():
+        story.append(Paragraph("كشف محاسبة المندوب", title_style))
+        story.append(Paragraph(f"المندوب: {row['المندوب']}", body_style))
+        story.append(Paragraph(f"القسم: {row['القسم']}", body_style))
+        story.append(Spacer(1, 10))
+        data = [
+            ["البيان", "القيمة"],
+            ["عدد الطلبات", f"{int(row['عدد الطلبات']):,}"],
+            ["تسعيرة الطلب", f"{int(row['التسعيرة']):,} د.ع"],
+            ["المبلغ المستحق", f"{int(row['المبلغ']):,} د.ع"],
+        ]
+        table = Table(data, colWidths=[230, 230], hAlign="RIGHT")
+        table.setStyle(TableStyle([
+            ("FONTNAME", (0,0), (-1,-1), font_name),
+            ("FONTSIZE", (0,0), (-1,-1), 11),
+            ("ALIGN", (0,0), (-1,-1), "RIGHT"),
+            ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#0f766e")),
+            ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+            ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#dfe7ef")),
+            ("BACKGROUND", (0,1), (-1,-1), colors.HexColor("#f8fafc")),
+            ("TOPPADDING", (0,0), (-1,-1), 9),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 9),
+        ]))
+        story.append(table)
+        story.append(Spacer(1, 20))
+        story.append(Paragraph("نظام بيانات المندوبين", small_style))
+        if idx < len(summary_df) - 1:
+            story.append(PageBreak())
+    doc.build(story)
+    return output.getvalue()
+
+def render_accounting_page():
+    st.markdown(
+        "<div class='section-title'><i class='pi pi-calculator'></i><span>محاسبة المندوبين</span></div>",
+        unsafe_allow_html=True,
+    )
+    st.caption("رفع كشف Excel → تحديد مركز/قضاء → احتساب الطلبات والمبالغ → طباعة PDF A4.")
+
+    if st.button("العودة إلى الصفحة الرئيسية", key="accounting_back_home"):
+        st.session_state.current_page = "home"
+        st.rerun()
+
+    tab_upload, tab_assign, tab_rates, tab_report = st.tabs(
+        ["📥 كشف Excel", "👥 تقسيم المندوبين", "💰 التسعيرات", "🧾 المحاسبة والطباعة"]
+    )
+
+    with tab_upload:
+        uploaded = st.file_uploader(
+            "ارفع كشف Excel المحاسبة",
+            type=["xlsx", "xls", "csv"],
+            key="accounting_excel",
+            help="يجب أن يحتوي الملف على اسم المندوب ورقم الوصل/الوصول.",
+        )
+        if uploaded:
+            try:
+                if uploaded.name.lower().endswith(".csv"):
+                    df = pd.read_csv(uploaded)
+                else:
+                    df = pd.read_excel(uploaded)
+                rows, _, error = accounting_extract_rows(df)
+                if error:
+                    st.error(error)
+                else:
+                    st.session_state.accounting_rows = rows
+                    # Initialize unseen drivers with the default section.
+                    for name in rows["المندوب"].drop_duplicates():
+                        st.session_state.accounting_assignments.setdefault(name, "مركز")
+                    st.success(
+                        f"تم تحميل الكشف: {len(rows):,} وصولات و"
+                        f" {rows['المندوب'].nunique():,} مندوب."
+                    )
+                    st.dataframe(rows.head(30), use_container_width=True, hide_index=True)
+            except Exception as exc:
+                st.error(f"تعذر قراءة الملف: {exc}")
+
+        if st.session_state.accounting_rows is not None:
+            rows = st.session_state.accounting_rows
+            c1, c2, c3 = st.columns(3)
+            c1.metric("المندوبون", f"{rows['المندوب'].nunique():,}")
+            c2.metric("الوصولات", f"{len(rows):,}")
+            c3.metric("مركز / قضاء", f"{sum(1 for v in st.session_state.accounting_assignments.values() if v == 'مركز')} / {sum(1 for v in st.session_state.accounting_assignments.values() if v == 'قضاء')}")
+
+    with tab_assign:
+        if st.session_state.accounting_rows is None:
+            st.info("ارفع كشف Excel أولًا.")
+        else:
+            names = sorted(st.session_state.accounting_rows["المندوب"].drop_duplicates().tolist())
+            st.markdown("### تحديد قسم كل مندوب")
+            changed = False
+            for i, name in enumerate(names):
+                cols = st.columns([3, 1.3])
+                with cols[0]:
+                    st.write(name)
+                with cols[1]:
+                    current = st.session_state.accounting_assignments.get(name, "مركز")
+                    new_section = st.selectbox(
+                        "القسم", ["مركز", "قضاء"],
+                        index=0 if current == "مركز" else 1,
+                        key=f"accounting_section_{i}_{hash(name)}",
+                        label_visibility="collapsed",
+                    )
+                    if new_section != current:
+                        st.session_state.accounting_assignments[name] = new_section
+                        changed = True
+            if st.button("💾 حفظ تقسيم المندوبين", type="primary", use_container_width=True):
+                st.success("تم حفظ تقسيم المندوبين لهذا النظام. ويمكن تغييره لاحقًا.")
+                st.rerun()
+
+    with tab_rates:
+        st.markdown("### تسعيرة الأقسام")
+        rate_cols = st.columns(2)
+        with rate_cols[0]:
+            center_rate = st.number_input(
+                "تسعيرة المركز (د.ع)", min_value=0, step=500,
+                value=int(st.session_state.accounting_rates.get("مركز", 2000)),
+                key="accounting_center_rate",
+            )
+        with rate_cols[1]:
+            district_rate = st.number_input(
+                "تسعيرة القضاء (د.ع)", min_value=0, step=500,
+                value=int(st.session_state.accounting_rates.get("قضاء", 3000)),
+                key="accounting_district_rate",
+            )
+        if st.button("💾 حفظ التسعيرات", key="save_accounting_rates", type="primary"):
+            st.session_state.accounting_rates = {
+                "مركز": int(center_rate),
+                "قضاء": int(district_rate),
+            }
+            st.success("تم حفظ التسعيرات.")
+            st.rerun()
+
+    with tab_report:
+        if st.session_state.accounting_rows is None:
+            st.info("ارفع كشف Excel أولًا.")
+        else:
+            summary = accounting_build_summary(st.session_state.accounting_rows)
+            st.dataframe(
+                summary.style.format({
+                    "عدد الطلبات": "{:,.0f}",
+                    "التسعيرة": "{:,.0f}",
+                    "المبلغ": "{:,.0f}",
+                }),
+                use_container_width=True,
+                hide_index=True,
+            )
+            total_orders = int(summary["عدد الطلبات"].sum())
+            total_amount = int(summary["المبلغ"].sum())
+            c1, c2 = st.columns(2)
+            c1.metric("إجمالي الطلبات", f"{total_orders:,}")
+            c2.metric("الإجمالي المستحق", f"{total_amount:,} د.ع")
+
+            pdf_data = accounting_pdf_bytes(summary)
+            if pdf_data:
+                st.download_button(
+                    "🖨️ تنزيل PDF — A4، صفحة لكل مندوب",
+                    data=pdf_data,
+                    file_name="كشف_محاسبة_المندوبين.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    type="primary",
+                )
+            else:
+                st.warning(
+                    "ميزة PDF تحتاج حزمة reportlab. أضف reportlab إلى requirements.txt ثم أعد النشر."
+                )
+
+
 # ─── Session State ─────────────────────────────────────────────────────────────
 for key in STATUS_CONFIG:
     if f"data_{key}" not in st.session_state:
@@ -2455,8 +2749,11 @@ body { background:transparent; overflow:hidden; }
                         st.session_state.show_user_management = False
                         st.rerun()
 
-        # ── تسجيل الخروج ────────────────────────────────────────────────────────
+        # ── محاسبة المندوبين + تسجيل الخروج ─────────────────────────────────────
         with action_cols[1]:
+            if st.button("👥 محاسبة", key="topbar_accounting", help="فتح محاسبة المندوبين", use_container_width=True):
+                st.session_state.current_page = "accounting"
+                st.rerun()
             with st.container(key="topbar_logout_slot"):
                 if st.button("خروج", key="topbar_logout",
                              help="تسجيل الخروج", type="secondary",
@@ -2508,6 +2805,12 @@ body { background:transparent; overflow:hidden; }
                     clear_uploaded_data()
 
 
+
+# ─── صفحة محاسبة المندوبين ─────────────────────────────────────────────────────
+if st.session_state.current_page == "accounting":
+    render_accounting_page()
+    st.markdown("<div class='app-footer'>نظام بيانات المندوبين Pro v2.0</div>", unsafe_allow_html=True)
+    st.stop()
 
 # ─── رفع الملفات ──────────────────────────────────────────────────────────────
 st.markdown("<div class='section-title'><i class='pi pi-upload'></i><span>رفع الملفات</span></div>", unsafe_allow_html=True)
