@@ -12,10 +12,10 @@ import re
 import base64
 import hashlib
 import hmac
-import json
 import secrets
 import sqlite3
 import time
+from html import escape as html_escape
 from io import BytesIO
 from datetime import date, datetime, timedelta
 
@@ -29,12 +29,6 @@ try:
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
-
-try:
-    # pyrefly: ignore [missing-import]
-    import extra_streamlit_components as stx
-except ImportError:
-    stx = None
 
 # ─── إعدادات الصفحة ───────────────────────────────────────────────────────────
 st.set_page_config(
@@ -64,25 +58,148 @@ if "accounting_rates" not in st.session_state:
 if "accounting_rows" not in st.session_state:
     st.session_state.accounting_rows = None
 
-AUTH_USERS = {
-    os.getenv("APP_ADMIN_USERNAME", "admin"): {
-        "password": os.getenv("APP_ADMIN_PASSWORD", "admin123"),
-        "role": "admin",
-        "label": "مدير النظام",
-    },
-    os.getenv("APP_EMPLOYEE_USERNAME", "employee"): {
-        "password": os.getenv("APP_EMPLOYEE_PASSWORD", "employee123"),
-        "role": "employee",
-        "label": "موظف",
-    },
-}
-
-
 USERS_DB_PATH = os.getenv("APP_USERS_DB", "users.db")
+# OWASP's current PBKDF2-HMAC-SHA256 baseline is 600,000 iterations.
+PASSWORD_HASH_ITERATIONS = 600_000
+LEGACY_PASSWORD_HASH_MIN_ITERATIONS = 310_000
+PASSWORD_MIN_LENGTH = 12
+PASSWORD_MAX_LENGTH = 256
+LOGIN_MAX_FAILURES = 5
+LOGIN_FAILURE_WINDOW_SECONDS = 15 * 60
+LOGIN_LOCKOUT_SECONDS = 15 * 60
+
+
+def configured_idle_seconds() -> int:
+    try:
+        configured_value = int(os.getenv("APP_SESSION_IDLE_SECONDS", "1800"))
+    except ValueError:
+        configured_value = 1800
+    return min(max(configured_value, 5 * 60), 8 * 60 * 60)
+
+
+LOGIN_SESSION_IDLE_SECONDS = configured_idle_seconds()
+USERNAME_MAX_LENGTH = 64
+
+# This has the same format and cost as a real hash.  It prevents a faster
+# response for an unknown user from revealing whether a username exists.
+DUMMY_PASSWORD_HASH = (
+    "pbkdf2_sha256$600000$AAAAAAAAAAAAAAAAAAAAAA$"
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+)
+
+
+def normalize_username(value: str) -> str:
+    """Allow readable Arabic/Latin usernames without allowing markup or controls."""
+    username = value.strip()
+    if not 3 <= len(username) <= USERNAME_MAX_LENGTH:
+        return ""
+    if not all(char.isalnum() or char in "._-@" for char in username):
+        return ""
+    return username
+
+
+def password_policy_error(password: str) -> str | None:
+    """Return a safe, actionable password-policy error, if any."""
+    if len(password) < PASSWORD_MIN_LENGTH:
+        return "يجب أن تتكون كلمة المرور من 12 حرفًا على الأقل."
+    if len(password) > PASSWORD_MAX_LENGTH:
+        return "كلمة المرور طويلة جدًا. الحد الأقصى هو 256 حرفًا."
+    if any(char.isspace() for char in password):
+        return "لا تستخدم مسافات في كلمة المرور."
+
+    categories = sum((
+        any(char.isalpha() for char in password),
+        any(char.isdigit() for char in password),
+        any(not char.isalnum() for char in password),
+    ))
+    if categories < 3:
+        return "استخدم حروفًا وأرقامًا ورمزًا خاصًا واحدًا على الأقل."
+    return None
+
+
+def text_as_safe_html(text: object) -> str:
+    """Escape untrusted text before placing it in an unsafe HTML container."""
+    return html_escape(str(text)).replace("\n", "<br>")
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), salt, PASSWORD_HASH_ITERATIONS
+    )
+    salt_text = base64.urlsafe_b64encode(salt).decode("ascii").rstrip("=")
+    digest_text = base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+    return f"pbkdf2_sha256${PASSWORD_HASH_ITERATIONS}${salt_text}${digest_text}"
+
+
+def verify_password(password: str, stored_password: str) -> bool:
+    """Verify only PBKDF2 hashes; plaintext passwords are never accepted."""
+    if not isinstance(password, str) or not isinstance(stored_password, str):
+        return False
+    if len(password) > PASSWORD_MAX_LENGTH:
+        return False
+    if not stored_password.startswith("pbkdf2_sha256$"):
+        return False
+
+    try:
+        _, iterations_text, salt_text, digest_text = stored_password.split("$", 3)
+        iterations = int(iterations_text)
+        if not LEGACY_PASSWORD_HASH_MIN_ITERATIONS <= iterations <= 1_000_000:
+            return False
+        salt = base64.urlsafe_b64decode(salt_text + "=" * (-len(salt_text) % 4))
+        expected = base64.urlsafe_b64decode(digest_text + "=" * (-len(digest_text) % 4))
+        if len(salt) < 16 or len(expected) != 32:
+            return False
+        actual = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
+        return hmac.compare_digest(actual, expected)
+    except (ValueError, TypeError):
+        return False
+
+
+def password_hash_iterations(stored_password: str) -> int:
+    try:
+        _, iterations_text, _, _ = stored_password.split("$", 3)
+        return int(iterations_text)
+    except (AttributeError, ValueError):
+        return 0
+
+
+def configured_bootstrap_users() -> tuple[dict, list[str]]:
+    """Read only explicitly supplied credentials; never fall back to defaults."""
+    users: dict = {}
+    errors: list[str] = []
+    definitions = (
+        ("APP_ADMIN_USERNAME", "APP_ADMIN_PASSWORD", "admin", "مدير النظام", True),
+        ("APP_EMPLOYEE_USERNAME", "APP_EMPLOYEE_PASSWORD", "employee", "موظف", False),
+    )
+
+    for username_key, password_key, role, label, required in definitions:
+        username = os.getenv(username_key, "")
+        password = os.getenv(password_key, "")
+        if not username and not password:
+            if required:
+                errors.append("لم تُضبط بيانات مدير النظام في متغيرات البيئة.")
+            continue
+        clean_username = normalize_username(username)
+        if not clean_username or not password:
+            errors.append(f"تحقق من {username_key} و {password_key}.")
+            continue
+        if policy_error := password_policy_error(password):
+            errors.append(f"كلمة مرور {username_key}: {policy_error}")
+            continue
+        users[clean_username] = {"password": password, "role": role, "label": label}
+    return users, errors
+
+
+BOOTSTRAP_USERS, AUTH_CONFIGURATION_ERRORS = configured_bootstrap_users()
+
+
+def _open_users_db() -> sqlite3.Connection:
+    return sqlite3.connect(USERS_DB_PATH, timeout=5)
 
 
 def load_managed_users() -> dict:
-    with sqlite3.connect(USERS_DB_PATH) as connection:
+    with _open_users_db() as connection:
         connection.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 username TEXT PRIMARY KEY,
@@ -91,12 +208,32 @@ def load_managed_users() -> dict:
                 label TEXT NOT NULL
             )
         """)
-        for username, account in AUTH_USERS.items():
-            connection.execute(
-                """INSERT OR IGNORE INTO users (username, password, role, label)
-                   VALUES (?, ?, ?, ?)""",
-                (username, account["password"], account["role"], account["label"]),
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS login_attempts (
+                username TEXT PRIMARY KEY,
+                first_failed_at INTEGER NOT NULL,
+                failure_count INTEGER NOT NULL,
+                locked_until INTEGER NOT NULL DEFAULT 0
             )
+        """)
+        for username, account in BOOTSTRAP_USERS.items():
+            current = connection.execute(
+                "SELECT password FROM users WHERE username = ?", (username,)
+            ).fetchone()
+            if current is None:
+                connection.execute(
+                    """INSERT INTO users (username, password, role, label)
+                       VALUES (?, ?, ?, ?)""",
+                    (username, hash_password(account["password"]), account["role"], account["label"]),
+                )
+            # Replace an older plaintext bootstrap credential with the explicitly
+            # configured credential. This provides a safe recovery path from prior
+            # releases without ever preserving a plaintext password on disk.
+            elif not current[0].startswith("pbkdf2_sha256$"):
+                connection.execute(
+                    "UPDATE users SET password = ?, role = ?, label = ? WHERE username = ?",
+                    (hash_password(account["password"]), account["role"], account["label"], username),
+                )
         rows = connection.execute(
             "SELECT username, password, role, label FROM users"
         ).fetchall()
@@ -107,7 +244,7 @@ def load_managed_users() -> dict:
 
 
 def save_managed_user(username: str, account: dict) -> None:
-    with sqlite3.connect(USERS_DB_PATH) as connection:
+    with _open_users_db() as connection:
         connection.execute(
             """INSERT OR REPLACE INTO users (username, password, role, label)
                VALUES (?, ?, ?, ?)""",
@@ -116,8 +253,57 @@ def save_managed_user(username: str, account: dict) -> None:
 
 
 def delete_managed_user(username: str) -> None:
-    with sqlite3.connect(USERS_DB_PATH) as connection:
+    with _open_users_db() as connection:
         connection.execute("DELETE FROM users WHERE username = ?", (username,))
+
+
+def login_lock_remaining(username: str) -> int:
+    now = int(time.time())
+    with _open_users_db() as connection:
+        row = connection.execute(
+            "SELECT first_failed_at, locked_until FROM login_attempts WHERE username = ?",
+            (username,),
+        ).fetchone()
+        if not row:
+            return 0
+        first_failed_at, locked_until = row
+        if locked_until > now:
+            return locked_until - now
+        if first_failed_at + LOGIN_FAILURE_WINDOW_SECONDS <= now:
+            connection.execute("DELETE FROM login_attempts WHERE username = ?", (username,))
+    return 0
+
+
+def record_login_failure(username: str) -> int:
+    """Record a failure and return the remaining lockout seconds, if now locked."""
+    now = int(time.time())
+    with _open_users_db() as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        row = connection.execute(
+            "SELECT first_failed_at, failure_count FROM login_attempts WHERE username = ?",
+            (username,),
+        ).fetchone()
+        if not row or row[0] + LOGIN_FAILURE_WINDOW_SECONDS <= now:
+            first_failed_at, failure_count = now, 0
+        else:
+            first_failed_at, failure_count = row
+        failure_count += 1
+        locked_until = now + LOGIN_LOCKOUT_SECONDS if failure_count >= LOGIN_MAX_FAILURES else 0
+        connection.execute(
+            """INSERT INTO login_attempts (username, first_failed_at, failure_count, locked_until)
+               VALUES (?, ?, ?, ?)
+               ON CONFLICT(username) DO UPDATE SET
+                 first_failed_at = excluded.first_failed_at,
+                 failure_count = excluded.failure_count,
+                 locked_until = excluded.locked_until""",
+            (username, first_failed_at, failure_count, locked_until),
+        )
+    return max(locked_until - now, 0)
+
+
+def clear_login_failures(username: str) -> None:
+    with _open_users_db() as connection:
+        connection.execute("DELETE FROM login_attempts WHERE username = ?", (username,))
 
 
 def clear_uploaded_data() -> None:
@@ -134,95 +320,45 @@ def clear_uploaded_data() -> None:
 if "managed_users" not in st.session_state:
     st.session_state.managed_users = load_managed_users()
 
-SESSION_TTL_SECONDS = 12 * 60 * 60
-SESSION_SECRET = os.getenv("APP_SESSION_SECRET", "driver-number-session-secret")
 MAX_UPLOAD_SIZE_BYTES = 20 * 1024 * 1024
-PASSWORD_HASH_ITERATIONS = 310_000
-cookie_manager = stx.CookieManager(key="session_cookie_manager") if stx else None
 
 
-def delete_session_cookie() -> None:
-    if not cookie_manager:
-        return
-    try:
-        cookie_manager.delete("auth")
-    except (KeyError, AttributeError):
-        pass
-
-
-def create_session_token(username: str, role: str) -> str:
-    payload = {
-        "username": username,
-        "role": role,
-        "expires": int(time.time()) + SESSION_TTL_SECONDS,
-    }
-    encoded = base64.urlsafe_b64encode(
-        json.dumps(payload, separators=(",", ":")).encode("utf-8")
-    ).decode("ascii").rstrip("=")
-    signature = hmac.new(
-        SESSION_SECRET.encode("utf-8"), encoded.encode("ascii"), hashlib.sha256
-    ).hexdigest()
-    return f"{encoded}.{signature}"
-
-
-def hash_password(password: str) -> str:
-    salt = secrets.token_bytes(16)
-    digest = hashlib.pbkdf2_hmac(
-        "sha256", password.encode("utf-8"), salt, PASSWORD_HASH_ITERATIONS
+def has_usable_login_account() -> bool:
+    return any(
+        isinstance(account.get("password"), str)
+        and account["password"].startswith("pbkdf2_sha256$")
+        for account in st.session_state.managed_users.values()
     )
-    salt_text = base64.urlsafe_b64encode(salt).decode("ascii").rstrip("=")
-    digest_text = base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
-    return f"pbkdf2_sha256${PASSWORD_HASH_ITERATIONS}${salt_text}${digest_text}"
 
 
-def verify_password(password: str, stored_password: str) -> bool:
-    if not isinstance(password, str) or not isinstance(stored_password, str):
-        return False
-    if not stored_password.startswith("pbkdf2_sha256$"):
-        return hmac.compare_digest(password, stored_password)
-
-    try:
-        _, iterations_text, salt_text, digest_text = stored_password.split("$", 3)
-        iterations = int(iterations_text)
-        salt = base64.urlsafe_b64decode(salt_text + "=" * (-len(salt_text) % 4))
-        expected = base64.urlsafe_b64decode(digest_text + "=" * (-len(digest_text) % 4))
-        actual = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
-        return hmac.compare_digest(actual, expected)
-    except (ValueError, TypeError):
-        return False
+def clear_authentication() -> None:
+    st.session_state.authenticated = False
+    st.session_state.current_user = None
+    st.session_state.current_role = None
+    st.session_state.last_auth_activity = None
+    st.session_state.show_user_management = False
+    st.session_state.current_page = "home"
 
 
-def restore_session_from_query() -> None:
-    cookies = cookie_manager.get_all() if cookie_manager else {}
-    token = st.query_params.get("auth") or cookies.get("auth")
-    if not token or st.session_state.authenticated:
+def refresh_authenticated_session() -> None:
+    """Keep authentication scoped to this Streamlit session and expire idle sessions."""
+    if not st.session_state.authenticated:
         return
-
-    try:
-        encoded, signature = token.rsplit(".", 1)
-        expected = hmac.new(
-            SESSION_SECRET.encode("utf-8"), encoded.encode("ascii"), hashlib.sha256
-        ).hexdigest()
-        if not hmac.compare_digest(signature, expected):
-            raise ValueError("invalid session signature")
-
-        padded = encoded + "=" * (-len(encoded) % 4)
-        payload = json.loads(base64.urlsafe_b64decode(padded).decode("utf-8"))
-        account = st.session_state.managed_users.get(payload["username"])
-        if payload["expires"] <= int(time.time()) or not account:
-            raise ValueError("expired session")
-        if account["role"] != payload["role"]:
-            raise ValueError("role mismatch")
-
-        st.session_state.authenticated = True
-        st.session_state.current_user = payload["username"]
-        st.session_state.current_role = payload["role"]
-    except (KeyError, ValueError, TypeError, json.JSONDecodeError, UnicodeDecodeError):
-        st.query_params.pop("auth", None)
-        delete_session_cookie()
+    now = time.time()
+    last_activity = st.session_state.get("last_auth_activity")
+    if not last_activity or now - last_activity > LOGIN_SESSION_IDLE_SECONDS:
+        clear_authentication()
+        st.session_state.login_expired = True
+        return
+    st.session_state.last_auth_activity = now
 
 
-restore_session_from_query()
+# Previous releases put an authentication token in the URL. Remove it rather
+# than accepting it: URLs leak through history, logs, bookmarks, and referrers.
+if "auth" in st.query_params:
+    st.query_params.pop("auth")
+
+refresh_authenticated_session()
 
 # ─── CSS مخصص ─────────────────────────────────────────────────────────────────
 st.markdown("""
@@ -962,26 +1098,52 @@ hr { border-color: var(--line) !important; }
 .role-admin    { background: #ede9fe; color: #7c3aed; }
 .role-employee { background: #ecfdf5; color: #047857; }
 
-.login-page {
-    display: flex;
-    direction: rtl;
+.st-key-login_shell {
+    position: relative;
+    isolation: isolate;
     width: min(100%, 1080px);
     min-height: 560px;
     margin: clamp(1rem, 5vh, 3.5rem) auto;
-    overflow: hidden;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 22px;
-    box-shadow: 0 24px 60px rgba(23, 32, 51, 0.12), 0 4px 14px rgba(23, 32, 51, 0.06);
 }
 
-.login-panel {
-    display: flex;
-    flex: 0 0 420px;
-    flex-direction: column;
-    justify-content: center;
+.login-ambient {
+    position: absolute;
+    z-index: -1;
+    inset: 6% 8%;
+    overflow: hidden;
+    border-radius: 28px;
+    filter: blur(20px);
+    pointer-events: none;
+}
+
+.login-orb {
+    position: absolute;
+    width: 210px;
+    height: 210px;
+    border-radius: 50%;
+    opacity: 0.18;
+    background: #2dd4bf;
+    animation: login-float 11s ease-in-out infinite;
+}
+
+.login-orb--one { top: -70px; right: 5%; }
+.login-orb--two { bottom: -80px; left: 16%; background: #60a5fa; animation-delay: -5s; }
+
+.st-key-login_panel {
+    position: relative;
+    min-height: 560px;
     padding: 56px 46px;
-    background: var(--surface);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--surface) 96%, transparent);
+    box-shadow: 0 24px 60px rgba(23, 32, 51, 0.12), 0 4px 14px rgba(23, 32, 51, 0.06);
+    animation: login-panel-in 0.65s cubic-bezier(.2,.8,.2,1) both;
+}
+
+.st-key-login_panel > div {
+    position: relative;
+    z-index: 1;
 }
 
 .login-art {
@@ -994,6 +1156,9 @@ hr { border-color: var(--line) !important; }
     overflow: hidden;
     background: linear-gradient(145deg, #0f766e 0%, #115e59 58%, #164e63 100%);
     color: white;
+    border-radius: 22px;
+    box-shadow: 0 24px 60px rgba(8, 47, 73, 0.2);
+    animation: login-art-in 0.72s cubic-bezier(.2,.8,.2,1) both;
 }
 
 .login-art::before {
@@ -1004,6 +1169,20 @@ hr { border-color: var(--line) !important; }
     background-image: linear-gradient(135deg, rgba(255,255,255,0.16) 1px, transparent 1px), linear-gradient(45deg, rgba(255,255,255,0.1) 1px, transparent 1px);
     background-size: 34px 34px;
     transform: scale(1.15);
+    animation: login-grid-shift 22s linear infinite;
+}
+
+.login-art::after {
+    content: "";
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    right: -80px;
+    bottom: -110px;
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 50%;
+    box-shadow: 0 0 0 36px rgba(255,255,255,0.035), 0 0 0 74px rgba(255,255,255,0.025);
+    animation: login-breathe 6s ease-in-out infinite;
 }
 
 .login-art-content {
@@ -1022,6 +1201,7 @@ hr { border-color: var(--line) !important; }
     background: rgba(255,255,255,0.12);
     font-size: 0.76rem;
     font-weight: 700;
+    animation: login-rise 0.5s 0.12s both;
 }
 
 .login-art-icon {
@@ -1034,6 +1214,7 @@ hr { border-color: var(--line) !important; }
     border-radius: 20px;
     background: rgba(255,255,255,0.14);
     box-shadow: 0 14px 30px rgba(0,0,0,0.14);
+    animation: login-icon-float 5s ease-in-out 0.2s infinite;
 }
 
 .login-art-icon .pi {
@@ -1045,6 +1226,7 @@ hr { border-color: var(--line) !important; }
     color: white;
     font-size: 2rem;
     line-height: 1.25;
+    animation: login-rise 0.5s 0.28s both;
 }
 
 .login-art-copy {
@@ -1052,11 +1234,13 @@ hr { border-color: var(--line) !important; }
     color: rgba(255,255,255,0.78);
     font-size: 0.9rem;
     line-height: 1.8;
+    animation: login-rise 0.5s 0.34s both;
 }
 
 .login-art-stats {
     display: flex;
     gap: 10px;
+    animation: login-rise 0.5s 0.42s both;
 }
 
 .login-art-stat {
@@ -1065,6 +1249,12 @@ hr { border-color: var(--line) !important; }
     border: 1px solid rgba(255,255,255,0.18);
     border-radius: 12px;
     background: rgba(255,255,255,0.1);
+    transition: transform 0.22s ease, background-color 0.22s ease;
+}
+
+.login-art-stat:hover {
+    background: rgba(255,255,255,0.18);
+    transform: translateY(-4px);
 }
 
 .login-art-stat strong,
@@ -1093,6 +1283,8 @@ hr { border-color: var(--line) !important; }
     color: white;
     font-size: 1.05rem;
     font-weight: 900;
+    box-shadow: 0 12px 24px rgba(15, 118, 110, 0.22);
+    animation: login-logo-in 0.55s cubic-bezier(.2,.9,.3,1.35) both;
 }
 
 .login-title {
@@ -1100,6 +1292,7 @@ hr { border-color: var(--line) !important; }
     color: var(--ink);
     font-size: 1.45rem;
     text-align: center;
+    animation: login-rise 0.45s 0.1s both;
 }
 
 .login-subtitle {
@@ -1107,15 +1300,25 @@ hr { border-color: var(--line) !important; }
     color: var(--muted);
     font-size: 0.82rem;
     text-align: center;
+    animation: login-rise 0.45s 0.16s both;
 }
 
-.login-panel .stTextInput input {
+.st-key-login_panel .stTextInput input {
     min-height: 46px;
     border-radius: 10px !important;
     padding-inline: 14px !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
-.login-panel .stFormSubmitButton button {
+.st-key-login_panel .stTextInput input:focus {
+    border-color: var(--brand) !important;
+    box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.14) !important;
+    transform: translateY(-1px);
+}
+
+.st-key-login_panel .stFormSubmitButton button {
+    position: relative;
+    overflow: hidden;
     width: 100%;
     min-height: 46px;
     border: 0;
@@ -1124,11 +1327,100 @@ hr { border-color: var(--line) !important; }
     color: white;
     font-weight: 800;
     box-shadow: 0 8px 18px rgba(15, 118, 110, 0.2);
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.login-panel .stFormSubmitButton button:hover {
+.st-key-login_panel .stFormSubmitButton button::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 42%;
+    left: -55%;
+    transform: skewX(-24deg);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+    transition: left 0.55s ease;
+}
+
+.st-key-login_panel .stFormSubmitButton button:hover {
     background: var(--brand-dark);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(15, 118, 110, 0.28);
+}
+
+.st-key-login_panel .stFormSubmitButton button:hover::after { left: 120%; }
+
+.login-security-note {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 16px;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--line));
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--brand) 5%, var(--surface));
+    color: var(--muted);
+    font-size: 0.72rem;
+    line-height: 1.65;
+}
+
+.login-security-note .pi { color: var(--brand); }
+
+@keyframes login-panel-in {
+    from { opacity: 0; transform: translateX(18px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes login-art-in {
+    from { opacity: 0; transform: translateX(-22px) scale(.985); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes login-rise {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes login-logo-in {
+    from { opacity: 0; transform: scale(.72) rotate(-9deg); }
+    to { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes login-icon-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+@keyframes login-grid-shift {
+    from { transform: scale(1.15) translate(0, 0); }
+    to { transform: scale(1.15) translate(34px, 34px); }
+}
+
+@keyframes login-breathe {
+    0%, 100% { transform: scale(1); opacity: .72; }
+    50% { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes login-float {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(24px, -20px, 0) scale(1.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .login-orb,
+    .st-key-login_panel,
+    .login-art,
+    .login-art::before,
+    .login-art::after,
+    .login-art-badge,
+    .login-art-icon,
+    .login-art-title,
+    .login-art-copy,
+    .login-art-stats,
+    .login-logo {
+        animation: none !important;
+    }
+    .st-key-login_panel *, .login-art * { transition-duration: 0.01ms !important; }
 }
 
 /* Icon-only topbar buttons */
@@ -1367,8 +1659,8 @@ hr { border-color: var(--line) !important; }
     [data-testid="stFileUploader"] section { height: 104px; padding: 8px; }
     .app-topbar { gap: 6px; padding: 8px; overflow-x: auto; }
     .topbar-account { display: none; }
-    .login-page { margin: 0.75rem auto; }
-    .login-panel { flex-basis: 100%; padding: 32px 22px; }
+    .st-key-login_shell { margin: 0.75rem auto; min-height: auto; }
+    .st-key-login_panel { min-height: auto; padding: 32px 22px; }
     .login-art { display: none; }
 }
 
@@ -1389,7 +1681,7 @@ hr { border-color: var(--line) !important; }
 .stat-card,
 .status-card,
 .result-box,
-.login-panel,
+.st-key-login_panel,
 .stTabs [data-baseweb="tab-list"],
 [data-testid="stExpander"] {
     transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
@@ -1452,7 +1744,7 @@ hr { border-color: var(--line) !important; }
     background: #172033 !important;
 }
 
-.stApp:has(.theme-dark-marker) .login-panel {
+.stApp:has(.theme-dark-marker) .st-key-login_panel {
     background: #172033;
     border-color: #334155;
 }
@@ -1498,16 +1790,50 @@ st.markdown(
 )
 
 if not st.session_state.authenticated:
-    with st.container(key="login_page"):
+    with st.container(key="login_shell"):
+        st.markdown(
+            """<div class="login-ambient" aria-hidden="true">
+                <span class="login-orb login-orb--one"></span>
+                <span class="login-orb login-orb--two"></span>
+            </div>""",
+            unsafe_allow_html=True,
+        )
         login_cols = st.columns([1, 1.45])
         with login_cols[0]:
-            st.markdown("<div class='login-panel'>", unsafe_allow_html=True)
-            st.markdown("<div class='login-logo'>م</div><h1 class='login-title'>مرحبًا بك</h1><p class='login-subtitle'>سجّل الدخول إلى لوحة بيانات المندوبين</p>", unsafe_allow_html=True)
-            with st.form("login_form"):
-                username = st.text_input("اسم المستخدم", placeholder="أدخل اسم المستخدم")
-                password = st.text_input("كلمة المرور", type="password", placeholder="أدخل كلمة المرور")
-                submitted = st.form_submit_button("تسجيل الدخول", use_container_width=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+            with st.container(key="login_panel"):
+                st.markdown(
+                    "<div class='login-logo' aria-hidden='true'>م</div>"
+                    "<h1 class='login-title'>مرحبًا بك</h1>"
+                    "<p class='login-subtitle'>سجّل الدخول إلى لوحة بيانات المندوبين</p>",
+                    unsafe_allow_html=True,
+                )
+                username = ""
+                password = ""
+                submitted = False
+                if AUTH_CONFIGURATION_ERRORS and not has_usable_login_account():
+                    st.error("لا يمكن تفعيل تسجيل الدخول قبل إعداد حساب مدير آمن.")
+                    st.caption("اضبط APP_ADMIN_USERNAME و APP_ADMIN_PASSWORD في بيئة الاستضافة، ثم أعد تشغيل التطبيق.")
+                else:
+                    with st.form("login_form"):
+                        username = st.text_input(
+                            "اسم المستخدم",
+                            placeholder="أدخل اسم المستخدم",
+                            max_chars=USERNAME_MAX_LENGTH,
+                        )
+                        password = st.text_input(
+                            "كلمة المرور",
+                            type="password",
+                            placeholder="أدخل كلمة المرور",
+                            max_chars=PASSWORD_MAX_LENGTH,
+                        )
+                        submitted = st.form_submit_button("تسجيل الدخول", use_container_width=True)
+                    st.markdown(
+                        f"""<div class="login-security-note">
+                            <i class="pi pi-shield" aria-hidden="true"></i>
+                            <span>تنتهي الجلسة تلقائيًا بعد {LOGIN_SESSION_IDLE_SECONDS // 60} دقيقة من عدم النشاط.</span>
+                        </div>""",
+                        unsafe_allow_html=True,
+                    )
 
         with login_cols[1]:
             st.markdown("""
@@ -1526,22 +1852,39 @@ if not st.session_state.authenticated:
             </div>
             """, unsafe_allow_html=True)
 
+    if st.session_state.pop("login_expired", False):
+        st.warning("انتهت الجلسة لعدم النشاط. سجّل الدخول للمتابعة.")
+
     if submitted:
-        account = st.session_state.managed_users.get(username.strip())
-        if account and verify_password(password, account["password"]):
-            st.session_state.authenticated = True
-            st.session_state.current_user = username.strip()
-            st.session_state.current_role = account["role"]
-            session_token = create_session_token(username.strip(), account["role"])
-            st.query_params["auth"] = session_token
-            if cookie_manager:
-                cookie_manager.set(
-                    "auth",
-                    session_token,
-                    expires_at=datetime.now() + timedelta(seconds=SESSION_TTL_SECONDS),
-                )
-            st.rerun()
-        st.error("بيانات الدخول غير صحيحة")
+        clean_username = normalize_username(username)
+        rate_limit_key = clean_username or "invalid-username"
+        remaining_lock_time = login_lock_remaining(rate_limit_key)
+        if remaining_lock_time:
+            st.error(f"تم إيقاف محاولات الدخول مؤقتًا. حاول بعد {max(1, -(-remaining_lock_time // 60))} دقيقة.")
+        else:
+            account = st.session_state.managed_users.get(clean_username)
+            # Always derive a PBKDF2 hash, even for an unknown username, to make
+            # username enumeration through response timing substantially harder.
+            password_is_valid = verify_password(
+                password, account["password"] if account else DUMMY_PASSWORD_HASH
+            )
+            if account and password_is_valid:
+                clear_login_failures(clean_username)
+                if password_hash_iterations(account["password"]) < PASSWORD_HASH_ITERATIONS:
+                    account["password"] = hash_password(password)
+                    save_managed_user(clean_username, account)
+                st.session_state.login_expired = False
+                st.session_state.last_auth_activity = time.time()
+                st.session_state.authenticated = True
+                st.session_state.current_user = clean_username
+                st.session_state.current_role = account["role"]
+                st.rerun()
+
+            remaining_lock_time = record_login_failure(rate_limit_key)
+            if remaining_lock_time:
+                st.error("تم إيقاف محاولات الدخول مؤقتًا لحماية الحساب. حاول لاحقًا.")
+            else:
+                st.error("بيانات الدخول غير صحيحة")
     st.stop()
 
 if st.session_state.current_page == "user_management" and st.session_state.current_role == "admin":
@@ -1563,18 +1906,24 @@ if st.session_state.current_page == "user_management" and st.session_state.curre
         with st.form("standalone_add_employee_form", clear_on_submit=True):
             add_cols = st.columns([1.2, 1.2, 1])
             with add_cols[0]:
-                new_username = st.text_input("اسم الموظف", placeholder="employee2")
+                new_username = st.text_input(
+                    "اسم الموظف", placeholder="employee2", max_chars=USERNAME_MAX_LENGTH
+                )
             with add_cols[1]:
-                new_password = st.text_input("كلمة المرور", type="password")
+                new_password = st.text_input(
+                    "كلمة المرور", type="password", max_chars=PASSWORD_MAX_LENGTH
+                )
             with add_cols[2]:
                 add_employee = st.form_submit_button("إضافة موظف", use_container_width=True)
 
         if add_employee:
-            clean_username = new_username.strip()
+            clean_username = normalize_username(new_username)
             if not clean_username or not new_password:
-                st.warning("أدخل اسم الموظف وكلمة المرور")
+                st.warning("أدخل اسم مستخدم صحيحًا وكلمة مرور.")
             elif clean_username in st.session_state.managed_users:
                 st.error("اسم المستخدم موجود مسبقًا")
+            elif policy_error := password_policy_error(new_password):
+                st.error(policy_error)
             else:
                 st.session_state.managed_users[clean_username] = {
                     "password": hash_password(new_password),
@@ -1594,6 +1943,7 @@ if st.session_state.current_page == "user_management" and st.session_state.curre
             if st.button("حذف المستخدم المحدد", key="standalone_delete_employee", type="secondary"):
                 del st.session_state.managed_users[delete_user]
                 delete_managed_user(delete_user)
+                clear_login_failures(delete_user)
                 st.success("تم حذف الموظف")
                 st.rerun()
     st.stop()
@@ -1933,7 +2283,9 @@ def render_copy_button(text: str, key: str) -> None:
     """عرض زر ينسخ النص إلى حافظة المستخدم."""
     import json
 
-    text_json = json.dumps(text, ensure_ascii=False)
+    # JSON does not escape a closing script tag by default. Escape it before
+    # embedding untrusted spreadsheet content inside this component's script.
+    text_json = json.dumps(text, ensure_ascii=False).replace("</", "<\\/")
     components.html(f"""
     <style>
         .pi-copy::before {{ content: "⧉"; }}
@@ -2154,7 +2506,7 @@ def accounting_pdf_bytes(summary_df):
         except ImportError:
             return str(text)
 
-def accounting_pdf_bytes(summary_df, mode="per_driver", driver_filter=None, report_date=None):
+def accounting_pdf_bytes(summary_df, mode="per_driver", driver_filter=None, report_date=None, company_name=None):
     """
     mode:
       'per_driver'   — page per driver (original)
@@ -2256,6 +2608,7 @@ def accounting_pdf_bytes(summary_df, mode="per_driver", driver_filter=None, repo
     )
 
     date_str = report_date.strftime("%Y/%m/%d") if report_date else date.today().strftime("%Y/%m/%d")
+    comp_suffix = f" ({company_name.strip()})" if company_name and str(company_name).strip() else ""
     story = []
 
     def _tbl_style(header_color="#0f766e"):
@@ -2334,7 +2687,7 @@ def accounting_pdf_bytes(summary_df, mode="per_driver", driver_filter=None, repo
         tbl.setStyle(ts)
 
         block = [
-            Paragraph(_ar("كشف محاسبة المندوبين"), title_style),
+            Paragraph(_ar(f"كشف محاسبة المندوبين{comp_suffix}"), title_style),
             Paragraph(_ar(f"تاريخ الكشف: {date_str}"), sub_style),
             tbl,
             Spacer(1, 10),
@@ -2346,7 +2699,7 @@ def accounting_pdf_bytes(summary_df, mode="per_driver", driver_filter=None, repo
     elif mode == "single" and driver_filter:
         df_f = summary_df[summary_df["المندوب"] == driver_filter]
         for idx, row in df_f.reset_index(drop=True).iterrows():
-            story.append(Paragraph(_ar("كشف محاسبة المندوب"), title_style))
+            story.append(Paragraph(_ar(f"كشف محاسبة المندوب{comp_suffix}"), title_style))
             story.append(Paragraph(_ar(f"تاريخ الكشف: {date_str}"), sub_style))
             story.append(Paragraph(_ar(f"المندوب: {row['المندوب']}"), body_style))
             story.append(Paragraph(_ar(f"القسم: {row['القسم']}"), body_style))
@@ -2366,7 +2719,7 @@ def accounting_pdf_bytes(summary_df, mode="per_driver", driver_filter=None, repo
     # ── Mode: per_driver (original — page per driver) ──────────────────────────
     else:
         for idx, row in summary_df.reset_index(drop=True).iterrows():
-            story.append(Paragraph(_ar("كشف محاسبة المندوب"), title_style))
+            story.append(Paragraph(_ar(f"كشف محاسبة المندوب{comp_suffix}"), title_style))
             story.append(Paragraph(_ar(f"تاريخ الكشف: {date_str}"), sub_style))
             story.append(Paragraph(_ar(f"المندوب: {row['المندوب']}"), body_style))
             story.append(Paragraph(_ar(f"القسم: {row['القسم']}"), body_style))
@@ -2514,12 +2867,24 @@ def render_accounting_page():
             if not REPORTLAB_AVAILABLE:
                 st.warning("ميزة PDF تحتاج حزمة reportlab. أضف reportlab إلى requirements.txt ثم أعد النشر.")
             else:
-                # ── تاريخ الكشف ────────────────────────────────────────────────
-                rpt_date = st.date_input(
-                    "📅 تاريخ الكشف",
-                    value=date.today(),
-                    key="accounting_report_date",
-                )
+                # ── تاريخ الكشف واسم الشركة ─────────────────────────────────────
+                meta_col1, meta_col2 = st.columns(2)
+                with meta_col1:
+                    rpt_date = st.date_input(
+                        "📅 تاريخ الكشف",
+                        value=date.today(),
+                        key="accounting_report_date",
+                    )
+                with meta_col2:
+                    company_name = st.text_input(
+                        "🏢 اسم الشركة (اختياري)",
+                        value="",
+                        placeholder="مثال: شركة الرافدين",
+                        key="accounting_company_name",
+                        help="يظهر بجانب اسم الكشف بين قوسين: كشف محاسبة المندوبين (اسم الشركة)",
+                    )
+
+                comp_file_part = f"_{company_name.strip().replace(' ', '_')}" if company_name and company_name.strip() else ""
 
                 st.markdown("#### خيارات الطباعة")
                 pdf_col1, pdf_col2 = st.columns(2)
@@ -2539,13 +2904,14 @@ def render_accounting_page():
                         mode="single",
                         driver_filter=selected_driver,
                         report_date=rpt_date,
+                        company_name=company_name,
                     )
                     if pdf_single:
                         safe_name = selected_driver.replace(" ", "_")[:30]
                         st.download_button(
                             f"🖨️ طباعة كشف {selected_driver}",
                             data=pdf_single,
-                            file_name=f"كشف_{safe_name}.pdf",
+                            file_name=f"كشف_{safe_name}{comp_file_part}.pdf",
                             mime="application/pdf",
                             use_container_width=True,
                             type="primary",
@@ -2560,12 +2926,13 @@ def render_accounting_page():
                         summary,
                         mode="all_one_page",
                         report_date=rpt_date,
+                        company_name=company_name,
                     )
                     if pdf_all:
                         st.download_button(
                             "🖨️ طباعة الكشف الشامل",
                             data=pdf_all,
-                            file_name=f"كشف_شامل_{rpt_date.strftime('%Y-%m-%d')}.pdf",
+                            file_name=f"كشف_شامل{comp_file_part}_{rpt_date.strftime('%Y-%m-%d')}.pdf",
                             mime="application/pdf",
                             use_container_width=True,
                             type="secondary",
@@ -3021,9 +3388,9 @@ body { background:transparent; overflow:hidden; }
         avatar     = user_name[:1].upper()
         st.markdown(f"""
         <div class='topbar-account'>
-            <span class='topbar-avatar'>{avatar}</span>
+            <span class='topbar-avatar'>{html_escape(avatar)}</span>
             <span class='topbar-user-text'>
-                <span class='topbar-user-name'>{user_name}</span>
+                <span class='topbar-user-name'>{html_escape(user_name)}</span>
                 <span class='topbar-role-badge {role_cls}'>{role_label}</span>
             </span>
         </div>""", unsafe_allow_html=True)
@@ -3058,13 +3425,7 @@ body { background:transparent; overflow:hidden; }
                 if st.button("خروج", key="topbar_logout",
                              help="تسجيل الخروج", type="secondary",
                              use_container_width=True):
-                    st.session_state.authenticated = False
-                    st.session_state.current_user = None
-                    st.session_state.current_role = None
-                    st.session_state.show_user_management = False
-                    st.session_state.current_page = "home"
-                    st.query_params.pop("auth", None)
-                    delete_session_cookie()
+                    clear_authentication()
                     st.rerun()
 
     # ── خيارات المعالجة المرفوعة للشريط العلوي ────────────────────────────────────
@@ -3191,7 +3552,7 @@ with stat_cols[1]:
 with stat_cols[2]:
     st.markdown(f"""<div class="stat-card">
         <div class="stat-label"><i class="pi pi-trophy"></i> الأعلى طلباً</div>
-        <div class="stat-value stat-orange" style="font-size:1.2rem">{top_driver_name}</div>
+        <div class="stat-value stat-orange" style="font-size:1.2rem">{html_escape(str(top_driver_name))}</div>
         <div class="stat-label">{top_driver_count if top_driver_count else ''} طلب</div>
     </div>""", unsafe_allow_html=True)
 
@@ -3240,7 +3601,10 @@ if has_data:
                 st.download_button("تنزيل", text_output, "results.txt", "text/plain", use_container_width=True)
                 render_copy_button(text_output, "combined")
             with col_txt:
-                st.markdown(f'<div class="result-box">{text_output.replace(chr(10), "<br>")}</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="result-box">{text_as_safe_html(text_output)}</div>',
+                    unsafe_allow_html=True,
+                )
 
         else:
             # نتائج مقسّمة
@@ -3263,8 +3627,11 @@ if has_data:
                                            key=f"dl_{status}", use_container_width=True)
                         render_copy_button(text_output, f"status-{status}")
                     with col_txt:
-                        st.markdown(f'<div class="result-box" style="border-color:{cfg["color"]}55">{text_output.replace(chr(10), "<br>")}</div>',
-                                    unsafe_allow_html=True)
+                        st.markdown(
+                            f'<div class="result-box" style="border-color:{cfg["color"]}55">'
+                            f'{text_as_safe_html(text_output)}</div>',
+                            unsafe_allow_html=True,
+                        )
 
     # ── Tab 2: الرسم البياني ─────────────────────────────────────────────────
     with tab_chart:
