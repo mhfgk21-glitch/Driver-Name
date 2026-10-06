@@ -12,12 +12,14 @@ import re
 import base64
 import hashlib
 import hmac
+import json
 import secrets
 import sqlite3
 import time
 from html import escape as html_escape
 from io import BytesIO
 from datetime import date, datetime, timedelta
+from auth_cookie import create_auth_cookie, verify_auth_cookie
 
 try:
     from reportlab.lib.pagesizes import A4
@@ -37,6 +39,8 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+AUTH_COOKIE_NAME = "__Host-driver_auth"
 
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
@@ -332,16 +336,67 @@ def has_usable_login_account() -> bool:
 
 
 def clear_authentication() -> None:
+    components.html(
+        f"""<script>
+            window.parent.document.cookie =
+                "{AUTH_COOKIE_NAME}=; Path=/; Max-Age=0; Secure; SameSite=Strict";
+        </script>""",
+        height=0,
+    )
     st.session_state.authenticated = False
     st.session_state.current_user = None
     st.session_state.current_role = None
     st.session_state.last_auth_activity = None
+    st.session_state["_auth_cookie_expiry"] = None
     st.session_state.show_user_management = False
     st.session_state.current_page = "home"
 
 
+def set_browser_auth_cookie(username: str, account: dict) -> None:
+    now = int(time.time())
+    token, expires_at = create_auth_cookie(
+        username,
+        account["password"],
+        now,
+        LOGIN_SESSION_IDLE_SECONDS,
+    )
+    cookie_value = (
+        f"{AUTH_COOKIE_NAME}={token}; Path=/; Secure; SameSite=Strict"
+    )
+    components.html(
+        f"<script>window.parent.document.cookie = {json.dumps(cookie_value)};</script>",
+        height=0,
+    )
+    st.session_state["_auth_cookie_expiry"] = expires_at
+
+
+def restore_authentication_from_cookie() -> None:
+    if st.session_state.authenticated:
+        return
+    token = st.context.cookies.get(AUTH_COOKIE_NAME)
+    if not token:
+        return
+    verified = verify_auth_cookie(
+        token,
+        st.session_state.managed_users,
+        int(time.time()),
+        LOGIN_SESSION_IDLE_SECONDS,
+    )
+    if verified is None:
+        clear_authentication()
+        st.session_state.login_expired = True
+        return
+    username, expires_at = verified
+    account = st.session_state.managed_users[username]
+    st.session_state.authenticated = True
+    st.session_state.current_user = username
+    st.session_state.current_role = account["role"]
+    st.session_state.last_auth_activity = time.time()
+    st.session_state["_auth_cookie_expiry"] = expires_at
+
+
 def refresh_authenticated_session() -> None:
-    """Keep authentication scoped to this Streamlit session and expire idle sessions."""
+    """Refresh active sessions and expire them after the configured idle interval."""
     if not st.session_state.authenticated:
         return
     now = time.time()
@@ -351,6 +406,14 @@ def refresh_authenticated_session() -> None:
         st.session_state.login_expired = True
         return
     st.session_state.last_auth_activity = now
+    cookie_expiry = st.session_state.get("_auth_cookie_expiry")
+    if not cookie_expiry or cookie_expiry - now <= min(300, LOGIN_SESSION_IDLE_SECONDS // 3):
+        username = st.session_state.current_user
+        account = st.session_state.managed_users.get(username)
+        if account is None:
+            clear_authentication()
+            return
+        set_browser_auth_cookie(username, account)
 
 
 # Previous releases put an authentication token in the URL. Remove it rather
@@ -358,6 +421,7 @@ def refresh_authenticated_session() -> None:
 if "auth" in st.query_params:
     st.query_params.pop("auth")
 
+restore_authentication_from_cookie()
 refresh_authenticated_session()
 
 # ─── CSS مخصص ─────────────────────────────────────────────────────────────────
@@ -1920,6 +1984,7 @@ if not st.session_state.authenticated:
                 st.session_state.authenticated = True
                 st.session_state.current_user = clean_username
                 st.session_state.current_role = account["role"]
+                set_browser_auth_cookie(clean_username, account)
                 st.rerun()
 
             remaining_lock_time = record_login_failure(rate_limit_key)
