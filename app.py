@@ -487,11 +487,53 @@ body, .stApp {
     color: var(--muted);
     background: transparent;
     border: none;
+    transition: color 0.22s ease, background-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+    color: var(--brand);
+    transform: translateY(-1px);
 }
 
 .stTabs [aria-selected="true"] {
     background: var(--brand) !important;
     color: white !important;
+    box-shadow: 0 4px 10px rgba(15, 118, 110, 0.18);
+}
+
+.page-transition-marker {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.stMainBlockContainer:has(.page-transition-marker) {
+    animation: page-content-enter 0.42s cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+@keyframes page-content-enter {
+    from {
+        opacity: 0.45;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .stMainBlockContainer:has(.page-transition-marker) {
+        animation: none !important;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        transition: none !important;
+        transform: none !important;
+    }
 }
 
 [data-testid="stSidebar"] {
@@ -1886,6 +1928,14 @@ if not st.session_state.authenticated:
             else:
                 st.error("بيانات الدخول غير صحيحة")
     st.stop()
+
+page_changed = st.session_state.get("_last_rendered_page") != st.session_state.current_page
+st.session_state["_last_rendered_page"] = st.session_state.current_page
+if page_changed:
+    st.markdown(
+        "<span class='page-transition-marker' aria-hidden='true'></span>",
+        unsafe_allow_html=True,
+    )
 
 if st.session_state.current_page == "user_management" and st.session_state.current_role == "admin":
     st.markdown("<div class='section-title'><i class='pi pi-users'></i><span>إدارة المستخدمين</span></div>", unsafe_allow_html=True)
