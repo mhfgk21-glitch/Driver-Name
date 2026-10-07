@@ -545,16 +545,133 @@ body, .stApp {
 }
 
 .stTabs [data-baseweb="tab"] {
+    position: relative;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
     min-height: 42px;
     border-radius: 9px;
-    padding: 9px 18px;
+    padding: 9px 16px 11px;
     font-family: 'Cairo', sans-serif !important;
     font-weight: 600;
     color: var(--muted);
     background: transparent;
     border: none;
+    white-space: nowrap;
     box-shadow: none;
-    transition: color 0.24s ease, background-color 0.24s ease, box-shadow 0.24s ease;
+    transition: color 0.22s ease, background-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.accounting-tabs-marker {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.stMainBlockContainer:has(.accounting-tabs-marker) .stTabs [data-baseweb="tab-list"] {
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.stMainBlockContainer:has(.accounting-tabs-marker) .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
+    display: none;
+}
+
+.stMainBlockContainer:has(.results-tabs-marker) .stTabs [data-baseweb="tab-list"] {
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.stMainBlockContainer:has(.results-tabs-marker) .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
+    display: none;
+}
+
+.stMainBlockContainer:has(.accounting-tabs-marker) .stTabs [data-baseweb="tab"],
+.stMainBlockContainer:has(.results-tabs-marker) .stTabs [data-baseweb="tab"] {
+    flex: 0 0 auto;
+}
+
+.stMainBlockContainer:has(.accounting-tabs-marker) .stTabs [data-baseweb="tab"]::before {
+    content: "";
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    background: currentColor;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    opacity: 0.78;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.stMainBlockContainer:has(.accounting-tabs-marker) .stTabs [data-baseweb="tab"]:nth-child(1)::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 3.75h7l4.25 4.5v12A1.75 1.75 0 0 1 16.5 22h-9A1.75 1.75 0 0 1 5.75 20.25v-14A2.5 2.5 0 0 1 8.25 3.75Z'/%3E%3Cpath d='M14 4v5h4.5M8.5 13h7M8.5 16.5h7'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 3.75h7l4.25 4.5v12A1.75 1.75 0 0 1 16.5 22h-9A1.75 1.75 0 0 1 5.75 20.25v-14A2.5 2.5 0 0 1 8.25 3.75Z'/%3E%3Cpath d='M14 4v5h4.5M8.5 13h7M8.5 16.5h7'/%3E%3C/svg%3E");
+}
+
+.stMainBlockContainer:has(.accounting-tabs-marker) .stTabs [data-baseweb="tab"]:nth-child(2)::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='3.25'/%3E%3Cpath d='M2.75 19.25a6.25 6.25 0 0 1 12.5 0M16 5a3.25 3.25 0 0 1 0 6.25M17 14a5.25 5.25 0 0 1 4.25 5.15'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='3.25'/%3E%3Cpath d='M2.75 19.25a6.25 6.25 0 0 1 12.5 0M16 5a3.25 3.25 0 0 1 0 6.25M17 14a5.25 5.25 0 0 1 4.25 5.15'/%3E%3C/svg%3E");
+}
+
+.stMainBlockContainer:has(.accounting-tabs-marker) .stTabs [data-baseweb="tab"]:nth-child(3)::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='12' cy='6' rx='7.5' ry='3'/%3E%3Cpath d='M4.5 6v5c0 1.65 3.35 3 7.5 3 1.1 0 2.15-.1 3.1-.3M4.5 11v5c0 1.65 3.35 3 7.5 3 1.45 0 2.8-.18 3.9-.5M19.5 11.5v-2M17 16.5l2.5-2.5 2.5 2.5M19.5 14v6'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cellipse cx='12' cy='6' rx='7.5' ry='3'/%3E%3Cpath d='M4.5 6v5c0 1.65 3.35 3 7.5 3 1.1 0 2.15-.1 3.1-.3M4.5 11v5c0 1.65 3.35 3 7.5 3 1.45 0 2.8-.18 3.9-.5M19.5 11.5v-2M17 16.5l2.5-2.5 2.5 2.5M19.5 14v6'/%3E%3C/svg%3E");
+}
+
+.stMainBlockContainer:has(.accounting-tabs-marker) .stTabs [data-baseweb="tab"]:nth-child(4)::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8V3.75h12V8M6 17H4.5A2.5 2.5 0 0 1 2 14.5v-4A2.5 2.5 0 0 1 4.5 8h15a2.5 2.5 0 0 1 2.5 2.5v4a2.5 2.5 0 0 1-2.5 2.5H18'/%3E%3Cpath d='M6 14h12v6.25H6zM17.5 11.5h.01'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8V3.75h12V8M6 17H4.5A2.5 2.5 0 0 1 2 14.5v-4A2.5 2.5 0 0 1 4.5 8h15a2.5 2.5 0 0 1 2.5 2.5v4a2.5 2.5 0 0 1-2.5 2.5H18'/%3E%3Cpath d='M6 14h12v6.25H6zM17.5 11.5h.01'/%3E%3C/svg%3E");
+}
+
+.stMainBlockContainer:has(.accounting-tabs-marker) .stTabs [data-baseweb="tab"]:nth-child(5)::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 19.5h17M5.5 16V11M10 16V6.5M14.5 16v-3.5M19 16V8'/%3E%3Cpath d='m4.5 8.5 5-4 4.5 5 6-5'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 19.5h17M5.5 16V11M10 16V6.5M14.5 16v-3.5M19 16V8'/%3E%3Cpath d='m4.5 8.5 5-4 4.5 5 6-5'/%3E%3C/svg%3E");
+}
+
+.stMainBlockContainer:has(.results-tabs-marker) .stTabs [data-baseweb="tab"]::before {
+    content: "";
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    background: currentColor;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    opacity: 0.78;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.stMainBlockContainer:has(.results-tabs-marker) .stTabs [data-baseweb="tab"]:nth-child(1)::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 3.75h7l4.25 4.5v12A1.75 1.75 0 0 1 16.5 22h-9A1.75 1.75 0 0 1 5.75 20.5v-14A2.5 2.5 0 0 1 8.25 4Z'/%3E%3Cpath d='M14 4v5h4.5M8.5 13h7M8.5 16.5h7'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 3.75h7l4.25 4.5v12A1.75 1.75 0 0 1 16.5 22h-9A1.75 1.75 0 0 1 5.75 20.5v-14A2.5 2.5 0 0 1 8.25 4Z'/%3E%3Cpath d='M14 4v5h4.5M8.5 13h7M8.5 16.5h7'/%3E%3C/svg%3E");
+}
+
+.stMainBlockContainer:has(.results-tabs-marker) .stTabs [data-baseweb="tab"]:nth-child(2)::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20V11M10 20V5M16 20v-7M22 20H2'/%3E%3Cpath d='m4 8 6-4 6 6 5-5'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20V11M10 20V5M16 20v-7M22 20H2'/%3E%3Cpath d='m4 8 6-4 6 6 5-5'/%3E%3C/svg%3E");
+}
+
+.stMainBlockContainer:has(.results-tabs-marker) .stTabs [data-baseweb="tab"]:nth-child(3)::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='4' width='17' height='16' rx='2'/%3E%3Cpath d='M3.5 9h17M9 4v16M15 9v11'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='4' width='17' height='16' rx='2'/%3E%3Cpath d='M3.5 9h17M9 4v16M15 9v11'/%3E%3C/svg%3E");
+}
+
+.stMainBlockContainer:has(.results-tabs-marker) .stTabs [data-baseweb="tab"]:nth-child(4)::before {
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12M7.5 10.5 12 15l4.5-4.5M4 16v4h16v-4'/%3E%3C/svg%3E");
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12M7.5 10.5 12 15l4.5-4.5M4 16v4h16v-4'/%3E%3C/svg%3E");
 }
 
 .stTabs [data-baseweb="tab"]:hover {
@@ -563,10 +680,27 @@ body, .stApp {
 }
 
 .stTabs [aria-selected="true"] {
+    isolation: isolate;
     background: linear-gradient(135deg, #0f766e, #115e59) !important;
     color: white !important;
     font-weight: 800;
-    box-shadow: 0 2px 5px rgba(15, 118, 110, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    box-shadow: 0 3px 8px rgba(15, 118, 110, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.stMainBlockContainer:has(.accounting-tabs-marker) .stTabs [aria-selected="true"]::before {
+    opacity: 1;
+    transform: scale(1.08);
+}
+
+.stTabs [aria-selected="true"]::after {
+    content: "";
+    position: absolute;
+    inset-inline: 36%;
+    bottom: 4px;
+    height: 2px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.72);
+    pointer-events: none;
 }
 
 .stTabs [data-baseweb="tab"]:focus-visible {
@@ -717,6 +851,14 @@ body, .stApp {
     }
 
     .stTabs [data-baseweb="tab"] {
+        transition: none !important;
+    }
+
+    .stMainBlockContainer:has(.accounting-tabs-marker) .stTabs [data-baseweb="tab"]::before {
+        transition: none !important;
+    }
+
+    .stMainBlockContainer:has(.results-tabs-marker) .stTabs [data-baseweb="tab"]::before {
         transition: none !important;
     }
 
@@ -1953,7 +2095,17 @@ hr { border-color: var(--line) !important; }
 @media (max-width: 768px) {
     .stat-card { height: 96px; padding: 14px 10px; }
     .stat-value { font-size: 1.6rem; }
-    .stTabs [data-baseweb="tab"] { padding: 8px 10px; font-size: 0.82rem; }
+    .stTabs [data-baseweb="tab"] { gap: 6px !important; padding: 8px 9px 10px; font-size: 0.78rem; }
+    .stMainBlockContainer:has(.accounting-tabs-marker) .stTabs [data-baseweb="tab"]::before {
+        width: 16px;
+        height: 16px;
+        flex-basis: 16px;
+    }
+    .stMainBlockContainer:has(.results-tabs-marker) .stTabs [data-baseweb="tab"]::before {
+        width: 16px;
+        height: 16px;
+        flex-basis: 16px;
+    }
     .upload-label { min-height: 38px; font-size: 0.82rem; }
     [data-testid="stFileUploader"] section { height: 104px; padding: 8px; }
     .app-topbar { gap: 6px; padding: 8px; overflow-x: auto; }
@@ -3060,13 +3212,17 @@ def render_accounting_page():
         "<div class='section-title'><i class='pi pi-calculator'></i><span>محاسبة المندوبين</span></div>",
         unsafe_allow_html=True,
     )
+    st.markdown(
+        "<span class='accounting-tabs-marker' aria-hidden='true'></span>",
+        unsafe_allow_html=True,
+    )
 
     if st.button("العودة إلى الصفحة الرئيسية", key="accounting_back_home"):
         st.session_state.current_page = "home"
         st.rerun()
 
     tab_upload, tab_assign, tab_rates, tab_report, tab_profit = st.tabs(
-        ["📥 كشف Excel", "👥 تقسيم المندوبين", "💰 التسعيرات", "🧾 المحاسبة والطباعة", "📈 الأرباح"]
+        ["كشف Excel", "تقسيم المندوبين", "التسعيرات", "المحاسبة والطباعة", "الأرباح"]
     )
 
     with tab_upload:
@@ -3341,6 +3497,44 @@ def render_accounting_page():
                 use_container_width=True,
                 hide_index=True,
             )
+            if REPORTLAB_AVAILABLE:
+                report_meta_cols = st.columns(2)
+                with report_meta_cols[0]:
+                    profit_report_date = st.date_input(
+                        "تاريخ تقرير الأرباح",
+                        value=st.session_state.get("accounting_report_date", date.today()),
+                        key="profit_report_date",
+                    )
+                with report_meta_cols[1]:
+                    profit_company_name = st.text_input(
+                        "اسم الشركة في التقرير (اختياري)",
+                        value=st.session_state.get("accounting_company_name", ""),
+                        key="profit_company_name",
+                    )
+
+                from profit_report import profit_report_pdf_bytes
+
+                profit_pdf = profit_report_pdf_bytes(
+                    profit_summary,
+                    gross_revenue,
+                    vehicle_transport,
+                    fines,
+                    profit_report_date,
+                    profit_company_name,
+                )
+                st.download_button(
+                    "📄 تنزيل تقرير الأرباح التفصيلي PDF (A4)",
+                    data=profit_pdf,
+                    file_name=f"تقرير_الأرباح_{profit_report_date.strftime('%Y-%m-%d')}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    type="primary",
+                    key="download_profit_report",
+                )
+            else:
+                st.warning(
+                    "تنزيل تقرير PDF غير متاح حاليًا؛ تأكد من تثبيت حزم reportlab و arabic-reshaper و python-bidi."
+                )
             if net_profit < 0:
                 st.warning("المصاريف أعلى من الإيرادات؛ النتيجة الحالية تمثل صافي خسارة.")
             elif gross_revenue == 0:
@@ -3984,6 +4178,10 @@ st.divider()
 
 # ─── النتائج والتحليلات ────────────────────────────────────────────────────────
 if has_data:
+    st.markdown(
+        "<span class='results-tabs-marker' aria-hidden='true'></span>",
+        unsafe_allow_html=True,
+    )
     tab_results, tab_chart, tab_table, tab_export = st.tabs([
         "النتائج النصية",
         "الرسم البياني",
