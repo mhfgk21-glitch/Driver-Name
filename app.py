@@ -493,15 +493,19 @@ body, .stApp {
 .pi.pi-eye-slash {
     position: absolute !important;
     top: 50% !important;
-    inset-inline: auto 0.5rem !important;
+    left: 0.5rem !important;
+    right: auto !important;
+    inset-inline-start: auto !important;
+    inset-inline-end: 0.5rem !important;
     display: grid !important;
     place-items: center;
     box-sizing: border-box;
     width: 2.25rem;
     height: 2.25rem;
+    min-width: 2.25rem;
     margin: 0 !important;
     padding: 0;
-    transform: translateY(-50%) !important;
+    transform: translateY(-50%) scale(1) !important;
     border: 1px solid var(--line);
     border-radius: 8px;
     background: var(--surface-soft);
