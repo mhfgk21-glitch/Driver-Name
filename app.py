@@ -20,6 +20,7 @@ from html import escape as html_escape
 from io import BytesIO
 from datetime import date, datetime, timedelta
 from auth_cookie import create_auth_cookie, verify_auth_cookie
+from pdf_formatting import format_pdf_date
 
 try:
     from reportlab.lib.pagesizes import A4
@@ -544,6 +545,11 @@ body, .stApp {
     box-shadow: inset 0 1px 2px rgba(23, 32, 51, 0.035);
 }
 
+.stTabs [data-baseweb="tab-border"],
+.stTabs [data-baseweb="tab-highlight"] {
+    display: none !important;
+}
+
 .stTabs [data-baseweb="tab"] {
     position: relative;
     display: flex !important;
@@ -681,10 +687,10 @@ body, .stApp {
 
 .stTabs [aria-selected="true"] {
     isolation: isolate;
-    background: linear-gradient(135deg, #0f766e, #115e59) !important;
+    background: linear-gradient(135deg, #4f46e5, #4338ca) !important;
     color: white !important;
     font-weight: 800;
-    box-shadow: 0 3px 8px rgba(15, 118, 110, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 6px rgba(67, 56, 202, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .stMainBlockContainer:has(.accounting-tabs-marker) .stTabs [aria-selected="true"]::before {
@@ -693,14 +699,7 @@ body, .stApp {
 }
 
 .stTabs [aria-selected="true"]::after {
-    content: "";
-    position: absolute;
-    inset-inline: 36%;
-    bottom: 4px;
-    height: 2px;
-    border-radius: 2px;
-    background: rgba(255, 255, 255, 0.72);
-    pointer-events: none;
+    content: none;
 }
 
 .stTabs [data-baseweb="tab"]:focus-visible {
@@ -2205,9 +2204,9 @@ hr { border-color: var(--line) !important; }
 }
 
 .stApp:has(.theme-dark-marker) .stTabs [aria-selected="true"] {
-    background: linear-gradient(135deg, #0f766e, #115e59) !important;
-    color: white !important;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    background: linear-gradient(135deg, #4f46e5, #3730a3) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
 .stApp:has(.theme-dark-marker) .stTabs [data-baseweb="tab"]:hover:not([aria-selected="true"]) {
@@ -3073,7 +3072,7 @@ def accounting_pdf_bytes(summary_df, mode="per_driver", driver_filter=None, repo
         textColor=colors.HexColor("#667085")
     )
 
-    date_str = report_date.strftime("%Y/%m/%d") if report_date else date.today().strftime("%Y/%m/%d")
+    date_str = format_pdf_date(report_date or date.today())
     comp_suffix = f" ({company_name.strip()})" if company_name and str(company_name).strip() else ""
     story = []
 

@@ -24,6 +24,7 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
+from pdf_formatting import format_pdf_date
 
 
 def _pdf_font_name() -> str:
@@ -162,7 +163,7 @@ def profit_report_pdf_bytes(
         textColor=colors.HexColor("#64748b"),
     )
 
-    date_text = report_date.strftime("%Y/%m/%d")
+    date_text = format_pdf_date(report_date)
     report_title = f"تقرير الأرباح{f' - {company_name.strip()}' if company_name.strip() else ''}"
     story = [
         _paragraph(report_title, title_style),
