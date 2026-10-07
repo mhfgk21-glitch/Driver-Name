@@ -687,10 +687,12 @@ body, .stApp {
 
 .stTabs [aria-selected="true"] {
     isolation: isolate;
-    background: linear-gradient(135deg, #4f46e5, #4338ca) !important;
+    border-radius: 999px !important;
+    background: linear-gradient(135deg, #78884a, #53622d) !important;
     color: white !important;
     font-weight: 800;
-    box-shadow: 0 2px 6px rgba(67, 56, 202, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    box-shadow: 0 4px 12px rgba(83, 98, 45, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+    transition: color 0.22s ease, background 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
 }
 
 .stMainBlockContainer:has(.accounting-tabs-marker) .stTabs [aria-selected="true"]::before {
@@ -2204,9 +2206,10 @@ hr { border-color: var(--line) !important; }
 }
 
 .stApp:has(.theme-dark-marker) .stTabs [aria-selected="true"] {
-    background: linear-gradient(135deg, #4f46e5, #3730a3) !important;
+    border-radius: 999px !important;
+    background: linear-gradient(135deg, #78884a, #53622d) !important;
     color: #ffffff !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .stApp:has(.theme-dark-marker) .stTabs [data-baseweb="tab"]:hover:not([aria-selected="true"]) {
