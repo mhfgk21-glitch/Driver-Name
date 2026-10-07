@@ -489,6 +489,36 @@ body, .stApp {
     display: none !important;
 }
 
+.pi.pi-eye,
+.pi.pi-eye-slash {
+    position: absolute !important;
+    top: 50% !important;
+    inset-inline: auto 0.5rem !important;
+    display: grid !important;
+    place-items: center;
+    box-sizing: border-box;
+    width: 2.25rem;
+    height: 2.25rem;
+    margin: 0 !important;
+    padding: 0;
+    transform: translateY(-50%) !important;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface-soft);
+    color: var(--muted) !important;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.pi.pi-eye:hover,
+.pi.pi-eye-slash:hover {
+    border-color: #b7c49a;
+    background: #f1f5e9;
+    color: #53622d !important;
+}
+
 .stApp {
     background: #f3f6f9;
     min-height: 100vh;
@@ -2210,6 +2240,20 @@ hr { border-color: var(--line) !important; }
     background: linear-gradient(135deg, #78884a, #53622d) !important;
     color: #ffffff !important;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.stApp:has(.theme-dark-marker) .pi.pi-eye,
+.stApp:has(.theme-dark-marker) .pi.pi-eye-slash {
+    border-color: #475569;
+    background: #1e293b;
+    color: #cbd5e1 !important;
+}
+
+.stApp:has(.theme-dark-marker) .pi.pi-eye:hover,
+.stApp:has(.theme-dark-marker) .pi.pi-eye-slash:hover {
+    border-color: #78884a;
+    background: #334155;
+    color: #e2e8f0 !important;
 }
 
 .stApp:has(.theme-dark-marker) .stTabs [data-baseweb="tab"]:hover:not([aria-selected="true"]) {
