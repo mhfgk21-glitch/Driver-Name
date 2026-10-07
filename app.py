@@ -536,33 +536,155 @@ body, .stApp {
 }
 
 .stTabs [data-baseweb="tab-list"] {
-    gap: 4px;
-    background: var(--surface);
+    gap: 5px;
+    background: var(--surface-soft);
     border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 5px;
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: inset 0 1px 2px rgba(23, 32, 51, 0.035);
 }
 
 .stTabs [data-baseweb="tab"] {
-    border-radius: 7px;
+    min-height: 42px;
+    border-radius: 9px;
     padding: 9px 18px;
     font-family: 'Cairo', sans-serif !important;
     font-weight: 600;
     color: var(--muted);
     background: transparent;
     border: none;
-    transition: color 0.22s ease, background-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+    box-shadow: none;
+    transition: color 0.24s ease, background-color 0.24s ease, box-shadow 0.24s ease;
 }
 
 .stTabs [data-baseweb="tab"]:hover {
     color: var(--brand);
-    transform: translateY(-1px);
+    background: rgba(15, 118, 110, 0.055);
 }
 
 .stTabs [aria-selected="true"] {
-    background: var(--brand) !important;
+    background: linear-gradient(135deg, #0f766e, #115e59) !important;
     color: white !important;
-    box-shadow: 0 4px 10px rgba(15, 118, 110, 0.18);
+    font-weight: 800;
+    box-shadow: 0 2px 5px rgba(15, 118, 110, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.stTabs [data-baseweb="tab"]:focus-visible {
+    outline: 2px solid #0f766e !important;
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+.stTabs [role="tabpanel"] {
+    animation: tab-panel-enter 0.26s ease-out both;
+}
+
+.profit-intro {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 22px;
+    margin: 4px 0 18px;
+    border: 1px solid #cce5e2;
+    border-radius: 16px;
+    background: linear-gradient(115deg, #f0fdfa 0%, #ffffff 72%);
+    box-shadow: 0 8px 24px rgba(15, 118, 110, 0.07);
+}
+
+.profit-intro-icon {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    flex: 0 0 54px;
+    border-radius: 15px;
+    background: linear-gradient(145deg, #0f766e, #115e59);
+    color: #ffffff;
+    font-size: 1.35rem;
+    box-shadow: 0 6px 14px rgba(15, 118, 110, 0.2);
+}
+
+.profit-intro h3 {
+    margin: 0 0 4px;
+    color: var(--ink);
+    font-size: 1.08rem;
+    font-weight: 900;
+}
+
+.profit-intro p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.84rem;
+}
+
+.profit-result {
+    padding: 20px 22px;
+    margin: 12px 0 18px;
+    border: 1px solid #a7f3d0;
+    border-radius: 16px;
+    background: linear-gradient(120deg, #ecfdf5, #f0fdfa);
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(15, 118, 110, 0.08);
+}
+
+.profit-result.is-negative {
+    border-color: #fecaca;
+    background: linear-gradient(120deg, #fff1f2, #fff7ed);
+    box-shadow: 0 8px 24px rgba(190, 18, 60, 0.07);
+}
+
+.profit-result-label {
+    color: #475569;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.profit-result-value {
+    margin-top: 4px;
+    color: #047857;
+    font-size: clamp(1.7rem, 4vw, 2.5rem);
+    font-weight: 900;
+    line-height: 1.35;
+    direction: ltr;
+    unicode-bidi: isolate;
+}
+
+.profit-result.is-negative .profit-result-value {
+    color: #be123c;
+}
+
+.stApp:has(.theme-dark-marker) .profit-intro {
+    border-color: #315d5a;
+    background: linear-gradient(115deg, #173b3b, #172033 72%);
+}
+
+.stApp:has(.theme-dark-marker) .profit-intro h3 {
+    color: #e5e7eb;
+}
+
+.stApp:has(.theme-dark-marker) .profit-result {
+    border-color: #216b57;
+    background: linear-gradient(120deg, #123b34, #173b3b);
+}
+
+.stApp:has(.theme-dark-marker) .profit-result.is-negative {
+    border-color: #7f3345;
+    background: linear-gradient(120deg, #3b1e2b, #33251f);
+}
+
+.stApp:has(.theme-dark-marker) .profit-result-label {
+    color: #cbd5e1;
+}
+
+@keyframes tab-panel-enter {
+    from {
+        opacity: 0.72;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .page-transition-marker {
@@ -596,7 +718,10 @@ body, .stApp {
 
     .stTabs [data-baseweb="tab"] {
         transition: none !important;
-        transform: none !important;
+    }
+
+    .stTabs [role="tabpanel"] {
+        animation: none !important;
     }
 }
 
@@ -1646,7 +1771,75 @@ hr { border-color: var(--line) !important; }
     box-shadow: 0 0 0 0.18rem rgba(83, 43, 253, 0.16) !important;
 }
 
-.st-key-topbar_accounting > button { min-height: 38px; border-radius: 2rem !important; background:#f0fdfa !important; color:#0f766e !important; border-color:#b7d8d4 !important; font-size:0.76rem !important; font-weight:700 !important; margin-bottom:5px; }\n\n.st-key-topbar_logout > button {
+.st-key-topbar_accounting > button {
+    min-height: 40px;
+    padding: 4px 12px !important;
+    border: 1px solid #b7d8d4 !important;
+    border-radius: 2rem !important;
+    background: linear-gradient(135deg, #f0fdfa, #e6fffb) !important;
+    color: #0f766e !important;
+    font-size: 0.78rem !important;
+    font-weight: 800 !important;
+    margin-bottom: 5px;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    box-shadow: 0 2px 7px rgba(15, 118, 110, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease !important;
+}
+
+.st-key-topbar_accounting > button:hover {
+    transform: translateY(-1px);
+    border-color: #0f766e !important;
+    background: linear-gradient(135deg, #ccfbf1, #d9f9f2) !important;
+    box-shadow: 0 5px 14px rgba(15, 118, 110, 0.16);
+}
+
+.accounting-button-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 27px;
+    height: 27px;
+    flex: 0 0 27px;
+    border: 1px solid rgba(15, 118, 110, 0.16);
+    border-radius: 50%;
+    background: #ffffff;
+    color: #0f766e;
+    font-size: 0.9rem;
+    line-height: 1;
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.st-key-topbar_accounting > button:hover .accounting-button-icon {
+    transform: rotate(-8deg) scale(1.05);
+    background: #0f766e;
+    color: #ffffff;
+}
+
+.accounting-button-label {
+    white-space: nowrap;
+}
+
+.stApp:has(.theme-dark-marker) .st-key-topbar_accounting > button {
+    border-color: #3b6470 !important;
+    background: linear-gradient(135deg, #173b3b, #164e4a) !important;
+    color: #99f6e4 !important;
+    box-shadow: 0 2px 9px rgba(0, 0, 0, 0.2);
+}
+
+.stApp:has(.theme-dark-marker) .accounting-button-icon {
+    border-color: #3b6470;
+    background: #1e293b;
+    color: #99f6e4;
+}
+
+.stApp:has(.theme-dark-marker) .st-key-topbar_accounting > button:hover .accounting-button-icon {
+    background: #0f766e;
+    color: #ffffff;
+}
+
+.st-key-topbar_logout > button {
     min-height: 38px;
     height: 38px;
     padding: 0.5rem 1.15rem !important;
@@ -1860,8 +2053,14 @@ hr { border-color: var(--line) !important; }
 }
 
 .stApp:has(.theme-dark-marker) .stTabs [aria-selected="true"] {
-    background: #0f766e !important;
+    background: linear-gradient(135deg, #0f766e, #115e59) !important;
     color: white !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.stApp:has(.theme-dark-marker) .stTabs [data-baseweb="tab"]:hover:not([aria-selected="true"]) {
+    background: rgba(153, 246, 228, 0.08);
+    color: #99f6e4;
 }
 
 .stApp:has(.theme-dark-marker) .app-footer,
@@ -2866,8 +3065,8 @@ def render_accounting_page():
         st.session_state.current_page = "home"
         st.rerun()
 
-    tab_upload, tab_assign, tab_rates, tab_report = st.tabs(
-        ["📥 كشف Excel", "👥 تقسيم المندوبين", "💰 التسعيرات", "🧾 المحاسبة والطباعة"]
+    tab_upload, tab_assign, tab_rates, tab_report, tab_profit = st.tabs(
+        ["📥 كشف Excel", "👥 تقسيم المندوبين", "💰 التسعيرات", "🧾 المحاسبة والطباعة", "📈 الأرباح"]
     )
 
     with tab_upload:
@@ -3053,6 +3252,99 @@ def render_accounting_page():
                             type="secondary",
                             key="dl_all_one_page",
                         )
+
+    with tab_profit:
+        st.markdown(
+            """<div class="profit-intro">
+                <div class="profit-intro-icon" aria-hidden="true">د.ع</div>
+                <div>
+                    <h3>ملخص الأرباح</h3>
+                    <p>أدخل الإيراد والمصاريف الإضافية، وستُخصم أجور المندوبين تلقائيًا من كشف المحاسبة المحمّل.</p>
+                </div>
+            </div>""",
+            unsafe_allow_html=True,
+        )
+
+        if st.session_state.accounting_rows is None:
+            st.info("ارفع كشف المحاسبة من تبويب «كشف Excel» أولًا لاحتساب أجور المندوبين.")
+        else:
+            profit_summary = accounting_build_summary(st.session_state.accounting_rows)
+            driver_wages = int(profit_summary["المبلغ"].sum())
+
+            revenue_col, transport_col, fines_col = st.columns(3)
+            with revenue_col:
+                gross_revenue = st.number_input(
+                    "المبلغ الكلي للإيرادات (د.ع)",
+                    min_value=0,
+                    value=0,
+                    step=10000,
+                    key="profit_gross_revenue",
+                    help="إجمالي الإيرادات للفترة التي يغطيها كشف المحاسبة.",
+                )
+            with transport_col:
+                vehicle_transport = st.number_input(
+                    "أجور نقل السيارة (د.ع)",
+                    min_value=0,
+                    value=0,
+                    step=1000,
+                    key="profit_vehicle_transport",
+                )
+            with fines_col:
+                fines = st.number_input(
+                    "الغرامات (د.ع)",
+                    min_value=0,
+                    value=0,
+                    step=1000,
+                    key="profit_fines",
+                )
+
+            total_deductions = driver_wages + int(vehicle_transport) + int(fines)
+            net_profit = int(gross_revenue) - total_deductions
+            profit_margin = (
+                net_profit / int(gross_revenue) * 100
+                if gross_revenue
+                else 0.0
+            )
+
+            result_class = "profit-result is-negative" if net_profit < 0 else "profit-result"
+            st.markdown(
+                f"""<div class="{result_class}">
+                    <div class="profit-result-label">صافي الأرباح</div>
+                    <div class="profit-result-value">{net_profit:,.0f} د.ع</div>
+                </div>""",
+                unsafe_allow_html=True,
+            )
+
+            metric_cols = st.columns(4)
+            metric_cols[0].metric("الإيرادات الكلية", f"{int(gross_revenue):,} د.ع")
+            metric_cols[1].metric("أجور المندوبين", f"{driver_wages:,} د.ع")
+            metric_cols[2].metric(
+                "النقل والغرامات",
+                f"{int(vehicle_transport) + int(fines):,} د.ع",
+            )
+            metric_cols[3].metric("هامش الربح", f"{profit_margin:.1f}%")
+
+            st.caption(
+                f"احتُسبت أجور {len(profit_summary):,} مندوبًا حسب الأقسام والتسعيرات الحالية."
+            )
+            breakdown = pd.DataFrame(
+                [
+                    {"البيان": "المبلغ الكلي للإيرادات", "القيمة (د.ع)": int(gross_revenue)},
+                    {"البيان": "أجور المندوبين", "القيمة (د.ع)": -driver_wages},
+                    {"البيان": "أجور نقل السيارة", "القيمة (د.ع)": -int(vehicle_transport)},
+                    {"البيان": "الغرامات", "القيمة (د.ع)": -int(fines)},
+                    {"البيان": "صافي الأرباح", "القيمة (د.ع)": net_profit},
+                ]
+            )
+            st.dataframe(
+                breakdown.style.format({"القيمة (د.ع)": "{:,.0f}"}),
+                use_container_width=True,
+                hide_index=True,
+            )
+            if net_profit < 0:
+                st.warning("المصاريف أعلى من الإيرادات؛ النتيجة الحالية تمثل صافي خسارة.")
+            elif gross_revenue == 0:
+                st.info("أدخل المبلغ الكلي للإيرادات لاحتساب هامش الربح.")
 
 
 # ─── Session State ─────────────────────────────────────────────────────────────
@@ -3482,6 +3774,16 @@ body { background:transparent; overflow:hidden; }
                     userBtn.innerHTML = '<i class="pi pi-cog" style="font-size: 1.05rem; color: #532BFD;"></i>';
                 }
             }
+
+            // محاسبة المندوبين: أيقونة آلة حاسبة داخل شارة متناسقة مع الشريط.
+            var accountingBtn = parentDoc.querySelector('.st-key-topbar_accounting button');
+            if (accountingBtn && !accountingBtn.querySelector('.accounting-button-icon')) {
+                accountingBtn.innerHTML =
+                    '<span class="accounting-button-icon" aria-hidden="true">' +
+                    '<i class="pi pi-calculator"></i></span>' +
+                    '<span class="accounting-button-label">المحاسبة</span>';
+                accountingBtn.setAttribute('aria-label', 'محاسبة المندوبين');
+            }
         } catch (e) {}
     }
     syncTopBarIcons();
@@ -3533,7 +3835,7 @@ body { background:transparent; overflow:hidden; }
 
         # ── محاسبة المندوبين + تسجيل الخروج ─────────────────────────────────────
         with action_cols[1]:
-            if st.button("👥 محاسبة", key="topbar_accounting", help="فتح محاسبة المندوبين", use_container_width=True):
+            if st.button("المحاسبة", key="topbar_accounting", help="فتح محاسبة المندوبين", use_container_width=True):
                 st.session_state.current_page = "accounting"
                 st.rerun()
             with st.container(key="topbar_logout_slot"):
